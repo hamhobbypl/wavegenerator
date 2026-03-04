@@ -1,0 +1,426 @@
+[
+  [
+    "A A A",
+    [
+      "ADAM[  ]ADAM[  ]ADAM",
+      "AGAT[  ]AGAT[  ]AGAT",
+      "ALAN[  ]ALAN[  ]ALAN",
+      "ALEX[  ]ALEX[  ]ALEX",
+      "ALFA[  ]ALFA[  ]ALFA",
+      "AMEN[  ]AMEN[  ]AMEN",
+      "ANIA[  ]ANIA[  ]ANIA",
+      "ANNA[  ]ANNA[  ]ANNA",
+      "APEL[  ]APEL[  ]APEL",
+      "ARKA[  ]ARKA[  ]ARKA",
+      "ARON[  ]ARON[  ]ARON",
+      "ATAK[  ]ATAK[  ]ATAK",
+      "ATOM[  ]ATOM[  ]ATOM",
+      "AUTO[  ]AUTO[  ]AUTO"
+    ]
+  ],
+  [
+    "B B B",
+    [
+      "BABA[  ]BABA[  ]BABA",
+      "BANK[  ]BANK[  ]BANK",
+      "BARD[  ]BARD[  ]BARD",
+      "BARK[  ]BARK[  ]BARK",
+      "BAZA[  ]BAZA[  ]BAZA",
+      "BELA[  ]BELA[  ]BELA",
+      "BIEG[  ]BIEG[  ]BIEG",
+      "BILA[  ]BILA[  ]BILA",
+      "BLOK[  ]BLOK[  ]BLOK",
+      "BLOG[  ]BLOG[  ]BLOG",
+      "BOKS[  ]BOKS[  ]BOKS",
+      "BRAT[  ]BRAT[  ]BRAT",
+      "BRYK[  ]BRYK[  ]BRYK",
+      "BUDA[  ]BUDA[  ]BUDA",
+      "BUNT[  ]BUNT[  ]BUNT",
+      "BURY[  ]BURY[  ]BURY"
+    ]
+  ],
+  [
+    "C C C",
+    [
+      "CENT[  ]CENT[  ]CENT",
+      "CERA[  ]CERA[  ]CERA",
+      "CZAS[  ]CZAS[  ]CZAS",
+      "CZAR[  ]CZAR[  ]CZAR",
+      "CZUB[  ]CZUB[  ]CZUB",
+      "CUDO[  ]CUDO[  ]CUDO"
+    ]
+  ],
+  [
+    "D D D",
+    [
+      "DACH[  ]DACH[  ]DACH",
+      "DAMA[  ]DAMA[  ]DAMA",
+      "DEMO[  ]DEMO[  ]DEMO",
+      "DINA[  ]DINA[  ]DINA",
+      "DOLA[  ]DOLA[  ]DOLA",
+      "DORA[  ]DORA[  ]DORA",
+      "DRAB[  ]DRAB[  ]DRAB",
+      "DREN[  ]DREN[  ]DREN",
+      "DRES[  ]DRES[  ]DRES",
+      "DRUK[  ]DRUK[  ]DRUK",
+      "DRUT[  ]DRUT[  ]DRUT",
+      "DUET[  ]DUET[  ]DUET",
+      "DUMA[  ]DUMA[  ]DUMA",
+      "DUPA[  ]DUPA[  ]DUPA",
+      "DYSK[  ]DYSK[  ]DYSK"
+    ]
+  ],
+  [
+    "E E E",
+    [
+      "ESEJ[  ]ESEJ[  ]ESEJ",
+      "ETER[  ]ETER[  ]ETER",
+      "ERYK[  ]ERYK[  ]ERYK"
+    ]
+  ],
+  [
+    "F F F",
+    [
+      "FAKS[  ]FAKS[  ]FAKS",
+      "FALA[  ]FALA[  ]FALA",
+      "FAMA[  ]FAMA[  ]FAMA",
+      "FART[  ]FART[  ]FART",
+      "FAZA[  ]FAZA[  ]FAZA",
+      "FEST[  ]FEST[  ]FEST",
+      "FIGA[  ]FIGA[  ]FIGA",
+      "FILM[  ]FILM[  ]FILM",
+      "FLET[  ]FLET[  ]FLET",
+      "FORT[  ]FORT[  ]FORT",
+      "FOTO[  ]FOTO[  ]FOTO",
+      "FRAK[  ]FRAK[  ]FRAK",
+      "FUGA[  ]FUGA[  ]FUGA"
+    ]
+  ],
+  [
+    "G G G",
+    [
+      "GABI[  ]GABI[  ]GABI",
+      "GALA[  ]GALA[  ]GALA",
+      "GAMA[  ]GAMA[  ]GAMA",
+      "GANG[  ]GANG[  ]GANG",
+      "GAPA[  ]GAPA[  ]GAPA",
+      "GOLF[  ]GOLF[  ]GOLF",
+      "GONG[  ]GONG[  ]GONG",
+      "GRAM[  ]GRAM[  ]GRAM",
+      "GRAT[  ]GRAT[  ]GRAT",
+      "GRES[  ]GRES[  ]GRES",
+      "GROM[  ]GROM[  ]GROM",
+      "GROT[  ]GROT[  ]GROT",
+      "GRUZ[  ]GRUZ[  ]GRUZ"
+    ]
+  ],
+  [
+    "H H H",
+    [
+      "HAFT[  ]HAFT[  ]HAFT",
+      "HALA[  ]HALA[  ]HALA",
+      "HALO[  ]HALO[  ]HALO",
+      "HELA[  ]HELA[  ]HELA",
+      "HERB[  ]HERB[  ]HERB",
+      "HUTA[  ]HUTA[  ]HUTA"
+    ]
+  ],
+  [
+    "I I I",
+    [
+      "IGOR[  ]IGOR[  ]IGOR",
+      "IKRA[  ]IKRA[  ]IKRA",
+      "INGA[  ]INGA[  ]INGA",
+      "IRMA[  ]IRMA[  ]IRMA",
+      "IWAN[  ]IWAN[  ]IWAN"
+    ]
+  ],
+  [
+    "J J J",
+    [
+      "JAMA[  ]JAMA[  ]JAMA",
+      "JEGO[  ]JEGO[  ]JEGO",
+      "JEST[  ]JEST[  ]JEST",
+      "JOGA[  ]JOGA[  ]JOGA",
+      "JOLA[  ]JOLA[  ]JOLA",
+      "JURA[  ]JURA[  ]JURA"
+    ]
+  ],
+  [
+    "K K K",
+    [
+      "KAJA[  ]KAJA[  ]KAJA",
+      "KAMA[  ]KAMA[  ]KAMA",
+      "KANT[  ]KANT[  ]KANT",
+      "KARA[  ]KARA[  ]KARA",
+      "KARK[  ]KARK[  ]KARK",
+      "KARP[  ]KARP[  ]KARP",
+      "KASA[  ]KASA[  ]KASA",
+      "KAWA[  ]KAWA[  ]KAWA",
+      "KEKS[  ]KEKS[  ]KEKS",
+      "KLAN[  ]KLAN[  ]KLAN",
+      "KLIK[  ]KLIK[  ]KLIK",
+      "KLIP[  ]KLIP[  ]KLIP",
+      "KLUB[  ]KLUB[  ]KLUB",
+      "KNOT[  ]KNOT[  ]KNOT",
+      "KOKS[  ]KOKS[  ]KOKS",
+      "KOMP[  ]KOMP[  ]KOMP",
+      "KOPA[  ]KOPA[  ]KOPA",
+      "KOSA[  ]KOSA[  ]KOSA",
+      "KOSZ[  ]KOSZ[  ]KOSZ",
+      "KRAB[  ]KRAB[  ]KRAB",
+      "KRAN[  ]KRAN[  ]KRAN",
+      "KREM[  ]KREM[  ]KREM",
+      "KRES[  ]KRES[  ]KRES",
+      "KRET[  ]KRET[  ]KRET",
+      "KROK[  ]KROK[  ]KROK",
+      "KUBA[  ]KUBA[  ]KUBA",
+      "KULA[  ]KULA[  ]KULA",
+      "KULT[  ]KULT[  ]KULT",
+      "KUNA[  ]KUNA[  ]KUNA",
+      "KURA[  ]KURA[  ]KURA",
+      "KURS[  ]KURS[  ]KURS",
+      "KURT[  ]KURT[  ]KURT"
+    ]
+  ],
+  [
+    "L L L",
+    [
+      "LAMA[  ]LAMA[  ]LAMA",
+      "LANS[  ]LANS[  ]LANS",
+      "LARA[  ]LARA[  ]LARA",
+      "LATA[  ]LATA[  ]LATA",
+      "LATO[  ]LATO[  ]LATO",
+      "LAWA[  ]LAWA[  ]LAWA",
+      "LEWA[  ]LEWA[  ]LEWA",
+      "LECH[  ]LECH[  ]LECH",
+      "LENA[  ]LENA[  ]LENA",
+      "LEON[  ]LEON[  ]LEON",
+      "LIGA[  ]LIGA[  ]LIGA",
+      "LILA[  ]LILA[  ]LILA",
+      "LINA[  ]LINA[  ]LINA",
+      "LIPA[  ]LIPA[  ]LIPA",
+      "LIST[  ]LIST[  ]LIST",
+      "LOLA[  ]LOLA[  ]LOLA",
+      "LOGO[  ]LOGO[  ]LOGO",
+      "LONT[  ]LONT[  ]LONT",
+      "LORA[  ]LORA[  ]LORA",
+      "LUNA[  ]LUNA[  ]LUNA",
+      "LUPA[  ]LUPA[  ]LUPA"
+    ]
+  ],
+  [
+    "M M M",
+    [
+      "MAJA[  ]MAJA[  ]MAJA",
+      "MAKS[  ]MAKS[  ]MAKS",
+      "MAMA[  ]MAMA[  ]MAMA",
+      "MAPA[  ]MAPA[  ]MAPA",
+      "MARS[  ]MARS[  ]MARS",
+      "MATA[  ]MATA[  ]MATA",
+      "MAYA[  ]MAYA[  ]MAYA",
+      "META[  ]META[  ]META",
+      "MIKA[  ]MIKA[  ]MIKA",
+      "MILA[  ]MILA[  ]MILA",
+      "MINA[  ]MINA[  ]MINA",
+      "MISA[  ]MISA[  ]MISA",
+      "MODA[  ]MODA[  ]MODA",
+      "MOLO[  ]MOLO[  ]MOLO",
+      "MOPS[  ]MOPS[  ]MOPS",
+      "MORS[  ]MORS[  ]MORS",
+      "MOST[  ]MOST[  ]MOST",
+      "MOTO[  ]MOTO[  ]MOTO",
+      "MOWA[  ]MOWA[  ]MOWA",
+      "MROK[  ]MROK[  ]MROK",
+      "MUZA[  ]MUZA[  ]MUZA"
+    ]
+  ],
+  [
+    "N N N",
+    [
+      "NANA[  ]NANA[  ]NANA",
+      "NAWA[  ]NAWA[  ]NAWA",
+      "NEON[  ]NEON[  ]NEON",
+      "NINA[  ]NINA[  ]NINA",
+      "NOGA[  ]NOGA[  ]NOGA",
+      "NORA[  ]NORA[  ]NORA",
+      "NOTA[  ]NOTA[  ]NOTA",
+      "NURT[  ]NURT[  ]NURT"
+    ]
+  ],
+  [
+    "O O O",
+    [
+      "OBCY[  ]OBCY[  ]OBCY",
+      "OCET[  ]OCET[  ]OCET",
+      "ODRA[  ]ODRA[  ]ODRA",
+      "OKAP[  ]OKAP[  ]OKAP",
+      "OKNO[  ]OKNO[  ]OKNO",
+      "OKOP[  ]OKOP[  ]OKOP",
+      "OLEG[  ]OLEG[  ]OLEG",
+      "OMEN[  ]OMEN[  ]OMEN",
+      "OPAL[  ]OPAL[  ]OPAL",
+      "OPIS[  ]OPIS[  ]OPIS",
+      "OPUS[  ]OPUS[  ]OPUS",
+      "ORKA[  ]ORKA[  ]ORKA",
+      "OWAD[  ]OWAD[  ]OWAD",
+      "OWCA[  ]OWCA[  ]OWCA"
+    ]
+  ],
+  [
+    "P P P",
+    [
+      "PAKA[  ]PAKA[  ]PAKA",
+      "PAKT[  ]PAKT[  ]PAKT",
+      "PANI[  ]PANI[  ]PANI",
+      "PARA[  ]PARA[  ]PARA",
+      "PASY[  ]PASY[  ]PASY",
+      "PENS[  ]PENS[  ]PENS",
+      "PIKA[  ]PIKA[  ]PIKA",
+      "PION[  ]PION[  ]PION",
+      "PIWO[  ]PIWO[  ]PIWO",
+      "PLAC[  ]PLAC[  ]PLAC",
+      "PLAN[  ]PLAN[  ]PLAN",
+      "PLUS[  ]PLUS[  ]PLUS",
+      "POLE[  ]POLE[  ]POLE",
+      "POLO[  ]POLO[  ]POLO",
+      "PORA[  ]PORA[  ]PORA",
+      "PORT[  ]PORT[  ]PORT",
+      "POST[  ]POST[  ]POST",
+      "PROM[  ]PROM[  ]PROM",
+      "PRYM[  ]PRYM[  ]PRYM",
+      "PULA[  ]PULA[  ]PULA",
+      "PUPA[  ]PUPA[  ]PUPA"
+    ]
+  ],
+  [
+    "R R R",
+    [
+      "RACA[  ]RACA[  ]RACA",
+      "RAFA[  ]RAFA[  ]RAFA",
+      "RAKI[  ]RAKI[  ]RAKI",
+      "RAMA[  ]RAMA[  ]RAMA",
+      "RANA[  ]RANA[  ]RANA",
+      "RASA[  ]RASA[  ]RASA",
+      "RATA[  ]RATA[  ]RATA",
+      "RAUT[  ]RAUT[  ]RAUT",
+      "REJS[  ]REJS[  ]REJS",
+      "RING[  ]RING[  ]RING",
+      "RITA[  ]RITA[  ]RITA",
+      "ROCK[  ]ROCK[  ]ROCK",
+      "ROLA[  ]ROLA[  ]ROLA",
+      "ROMB[  ]ROMB[  ]ROMB",
+      "ROMA[  ]ROMA[  ]ROMA",
+      "ROPA[  ]ROPA[  ]ROPA",
+      "ROTA[  ]ROTA[  ]ROTA",
+      "RUDA[  ]RUDA[  ]RUDA",
+      "RUNO[  ]RUNO[  ]RUNO",
+      "RYBA[  ]RYBA[  ]RYBA",
+      "RYTM[  ]RYTM[  ]RYTM"
+    ]
+  ],
+  [
+    "S S S",
+    [
+      "SAGA[  ]SAGA[  ]SAGA",
+      "SALA[  ]SALA[  ]SALA",
+      "SARA[  ]SARA[  ]SARA",
+      "SEKS[  ]SEKS[  ]SEKS",
+      "SIWY[  ]SIWY[  ]SIWY",
+      "SKOK[  ]SKOK[  ]SKOK",
+      "SMAK[  ]SMAK[  ]SMAK",
+      "SMAR[  ]SMAR[  ]SMAR",
+      "SMOG[  ]SMOG[  ]SMOG",
+      "SMYK[  ]SMYK[  ]SMYK",
+      "SNOP[  ]SNOP[  ]SNOP",
+      "SOFA[  ]SOFA[  ]SOFA",
+      "SOJA[  ]SOJA[  ]SOJA",
+      "SOLO[  ]SOLO[  ]SOLO",
+      "SORT[  ]SORT[  ]SORT",
+      "SOWA[  ]SOWA[  ]SOWA",
+      "SPAM[  ]SPAM[  ]SPAM",
+      "SPEC[  ]SPEC[  ]SPEC",
+      "SPIS[  ]SPIS[  ]SPIS",
+      "STEK[  ]STEK[  ]STEK",
+      "STEP[  ]STEP[  ]STEP",
+      "STOP[  ]STOP[  ]STOP",
+      "STYL[  ]STYL[  ]STYL",
+      "SUKA[  ]SUKA[  ]SUKA",
+      "SUMA[  ]SUMA[  ]SUMA"
+    ]
+  ],
+  [
+    "T T T",
+    [
+      "TACA[  ]TACA[  ]TACA",
+      "TAKT[  ]TAKT[  ]TAKT",
+      "TAMA[  ]TAMA[  ]TAMA",
+      "TARA[  ]TARA[  ]TARA",
+      "TATA[  ]TATA[  ]TATA",
+      "TAXI[  ]TAXI[  ]TAXI",
+      "TEKA[  ]TEKA[  ]TEKA",
+      "TEST[  ]TEST[  ]TEST",
+      "TINA[  ]TINA[  ]TINA",
+      "TOGA[  ]TOGA[  ]TOGA",
+      "TONA[  ]TONA[  ]TONA",
+      "TORF[  ]TORF[  ]TORF",
+      "TORT[  ]TORT[  ]TORT",
+      "TOST[  ]TOST[  ]TOST",
+      "TUBA[  ]TUBA[  ]TUBA",
+      "TUJA[  ]TUJA[  ]TUJA",
+      "TURA[  ]TURA[  ]TURA"
+    ]
+  ],
+  [
+    "U U U",
+    [
+      "UCHO[  ]UCHO[  ]UCHO",
+      "UJMA[  ]UJMA[  ]UJMA",
+      "ULGA[  ]ULGA[  ]ULGA",
+      "UNIK[  ]UNIK[  ]UNIK",
+      "URNA[  ]URNA[  ]URNA",
+      "UROK[  ]UROK[  ]UROK",
+      "USZY[  ]USZY[  ]USZY"
+    ]
+  ],
+  [
+    "V V V",
+    [
+      "VETO[  ]VETO[  ]VETO",
+      "VLOG[  ]VLOG[  ]VLOG"
+    ]
+  ],
+  [
+    "W W W",
+    [
+      "WADA[  ]WADA[  ]WADA",
+      "WAGA[  ]WAGA[  ]WAGA",
+      "WATA[  ]WATA[  ]WATA",
+      "WAZA[  ]WAZA[  ]WAZA",
+      "WEGE[  ]WEGE[  ]WEGE",
+      "WENA[  ]WENA[  ]WENA",
+      "WERA[  ]WERA[  ]WERA",
+      "WERS[  ]WERS[  ]WERS",
+      "WETO[  ]WETO[  ]WETO",
+      "WIEC[  ]WIEC[  ]WIEC",
+      "WINO[  ]WINO[  ]WINO",
+      "WODA[  ]WODA[  ]WODA",
+      "WOLA[  ]WOLA[  ]WOLA",
+      "WRAK[  ]WRAK[  ]WRAK"
+    ]
+  ],
+  [
+    "Y Y Y",
+    [
+      "YOGA[  ]YOGA[  ]YOGA"
+    ]
+  ],
+  [
+    "Z Z Z",
+    [
+      "ZIOM[  ]ZIOM[  ]ZIOM",
+      "ZIMA[  ]ZIMA[  ]ZIMA",
+      "ZUPA[  ]ZUPA[  ]ZUPA"
+    ]
+  ]
+]

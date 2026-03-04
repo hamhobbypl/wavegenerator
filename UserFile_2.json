@@ -1,0 +1,300 @@
+[
+  [
+    "A A A",
+    [
+      "ADA[  ]ADA[  ]ADA",
+      "AGA[  ]AGA[  ]AGA",
+      "AKT[  ]AKT[  ]AKT",
+      "ALA[  ]ALA[  ]ALA",
+      "ALE[  ]ALE[  ]ALE",
+      "ANI[  ]ANI[  ]ANI"
+    ]
+  ],
+  [
+    "B B B",
+    [
+      "BAR[  ]BAR[  ]BAR",
+      "BAS[  ]BAS[  ]BAS",
+      "BEZ[  ]BEZ[  ]BEZ",
+      "BIS[  ]BIS[  ]BIS",
+      "BIT[  ]BIT[  ]BIT",
+      "BOB[  ]BOB[  ]BOB",
+      "BOK[  ]BOK[  ]BOK",
+      "BON[  ]BON[  ]BON",
+      "BUK[  ]BUK[  ]BUK",
+      "BUT[  ]BUT[  ]BUT"
+    ]
+  ],
+  [
+    "C C C",
+    [
+      "CAL[  ]CAL[  ]CAL",
+      "CAP[  ]CAP[  ]CAP",
+      "CEL[  ]CEL[  ]CEL",
+      "CEP[  ]CEP[  ]CEP",
+      "CUD[  ]CUD[  ]CUD"
+    ]
+  ],
+  [
+    "D D D",
+    [
+      "DO[  ]DO[  ]DO",
+      "DAJ[  ]DAJ[  ]DAJ",
+      "DAL[  ]DAL[  ]DAL",
+      "DAM[  ]DAM[  ]DAM",
+      "DAR[  ]DAR[  ]DAR",
+      "DLA[  ]DLA[  ]DLA",
+      "DNO[  ]DNO[  ]DNO",
+      "DOK[  ]DOK[  ]DOK",
+      "DOM[  ]DOM[  ]DOM",
+      "DUR[  ]DUR[  ]DUR",
+      "DYM[  ]DYM[  ]DYM"
+    ]
+  ],
+  [
+    "E E E",
+    [
+      "EJ[  ]EJ[  ]EJ",
+      "EGO[  ]EGO[  ]EGO",
+      "ELA[  ]ELA[  ]ELA",
+      "ELF[  ]ELF[  ]ELF",
+      "EMA[  ]EMA[  ]EMA",
+      "ERA[  ]ERA[  ]ERA",
+      "EWA[  ]EWA[  ]EWA"
+    ]
+  ],
+  [
+    "F F F",
+    [
+      "FAN[  ]FAN[  ]FAN"
+    ]
+  ],
+  [
+    "G G G",
+    [
+      "GAD[  ]GAD[  ]GAD",
+      "GAJ[  ]GAJ[  ]GAJ",
+      "GAZ[  ]GAZ[  ]GAZ",
+      "GEJ[  ]GEJ[  ]GEJ",
+      "GEN[  ]GEN[  ]GEN",
+      "GOL[  ]GOL[  ]GOL",
+      "GRA[  ]GRA[  ]GRA",
+      "GUZ[  ]GUZ[  ]GUZ"
+    ]
+  ],
+  [
+    "H H H",
+    [
+      "HAK[  ]HAK[  ]HAK",
+      "HEJ[  ]HEJ[  ]HEJ",
+      "HIT[  ]HIT[  ]HIT",
+      "HOL[  ]HOL[  ]HOL",
+      "HOP[  ]HOP[  ]HOP",
+      "HUK[  ]HUK[  ]HUK"
+    ]
+  ],
+  [
+    "I I I",
+    [
+      "IM[  ]IM[  ]IM",
+      "ICH[  ]ICH[  ]ICH",
+      "IDA[  ]IDA[  ]IDA",
+      "IGA[  ]IGA[  ]IGA",
+      "ILE[  ]ILE[  ]ILE",
+      "INA[  ]INA[  ]INA",
+      "IRA[  ]IRA[  ]IRA"
+    ]
+  ],
+  [
+    "J J J",
+    [
+      "JE[  ]JE[  ]JE",
+      "JAN[  ]JAN[  ]JAN",
+      "JAR[  ]JAR[  ]JAR",
+      "JEJ[  ]JEJ[  ]JEJ",
+      "JEM[  ]JEM[  ]JEM",
+      "JOD[  ]JOD[  ]JOD"
+    ]
+  ],
+  [
+    "K K K",
+    [
+      "KAC[  ]KAC[  ]KAC",
+      "KAT[  ]KAT[  ]KAT",
+      "KIJ[  ]KIJ[  ]KIJ",
+      "KIM[  ]KIM[  ]KIM",
+      "KIR[  ]KIR[  ]KIR",
+      "KIT[  ]KIT[  ]KIT",
+      "KOC[  ]KOC[  ]KOC",
+      "KOD[  ]KOD[  ]KOD",
+      "KOK[  ]KOK[  ]KOK",
+      "KOP[  ]KOP[  ]KOP",
+      "KOS[  ]KOS[  ]KOS",
+      "KOT[  ]KOT[  ]KOT",
+      "KRA[  ]KRA[  ]KRA",
+      "KTO[  ]KTO[  ]KTO",
+      "KUR[  ]KUR[  ]KUR"
+    ]
+  ],
+  [
+    "L L L",
+    [
+      "LAK[  ]LAK[  ]LAK",
+      "LAS[  ]LAS[  ]LAS",
+      "LEK[  ]LEK[  ]LEK",
+      "LEN[  ]LEN[  ]LEN",
+      "LEO[  ]LEO[  ]LEO",
+      "LIS[  ]LIS[  ]LIS",
+      "LOK[  ]LOK[  ]LOK",
+      "LOS[  ]LOS[  ]LOS",
+      "LOT[  ]LOT[  ]LOT",
+      "LUZ[  ]LUZ[  ]LUZ"
+    ]
+  ],
+  [
+    "M M M",
+    [
+      "MI[  ]MI[  ]MI",
+      "MU[  ]MU[  ]MU",
+      "MY[  ]MY[  ]MY",
+      "MAG[  ]MAG[  ]MAG",
+      "MAK[  ]MAK[  ]MAK",
+      "MAT[  ]MAT[  ]MAT",
+      "MAX[  ]MAX[  ]MAX",
+      "MOC[  ]MOC[  ]MOC",
+      "MOP[  ]MOP[  ]MOP",
+      "MUR[  ]MUR[  ]MUR",
+      "MUS[  ]MUS[  ]MUS"
+    ]
+  ],
+  [
+    "N N N",
+    [
+      "NA[  ]NA[  ]NA",
+      "NAD[  ]NAD[  ]NAD",
+      "NAM[  ]NAM[  ]NAM",
+      "NAS[  ]NAS[  ]NAS",
+      "NET[  ]NET[  ]NET",
+      "NIE[  ]NIE[  ]NIE",
+      "NIM[  ]NIM[  ]NIM",
+      "NOC[  ]NOC[  ]NOC",
+      "NOS[  ]NOS[  ]NOS"
+    ]
+  ],
+  [
+    "O O O",
+    [
+      "OD[  ]OD[  ]OD",
+      "OJ[  ]OJ[  ]OJ",
+      "ON[  ]ON[  ]ON",
+      "OBA[  ]OBA[  ]OBA",
+      "OKO[  ]OKO[  ]OKO",
+      "OLA[  ]OLA[  ]OLA",
+      "ONA[  ]ONA[  ]ONA",
+      "ONE[  ]ONE[  ]ONE",
+      "ONI[  ]ONI[  ]ONI",
+      "ONO[  ]ONO[  ]ONO",
+      "OTO[  ]OTO[  ]OTO"
+    ]
+  ],
+  [
+    "P P P",
+    [
+      "PO[  ]PO[  ]PO",
+      "PAL[  ]PAL[  ]PAL",
+      "PAN[  ]PAN[  ]PAN",
+      "PAS[  ]PAS[  ]PAS",
+      "PAT[  ]PAT[  ]PAT",
+      "PAW[  ]PAW[  ]PAW",
+      "PIK[  ]PIK[  ]PIK",
+      "PIN[  ]PIN[  ]PIN",
+      "POD[  ]POD[  ]POD",
+      "POP[  ]POP[  ]POP",
+      "POR[  ]POR[  ]POR",
+      "POT[  ]POT[  ]POT",
+      "PRO[  ]PRO[  ]PRO",
+      "PUB[  ]PUB[  ]PUB",
+      "PUK[  ]PUK[  ]PUK"
+    ]
+  ],
+  [
+    "R R R",
+    [
+      "RAD[  ]RAD[  ]RAD",
+      "RAK[  ]RAK[  ]RAK",
+      "RAP[  ]RAP[  ]RAP",
+      "RAZ[  ]RAZ[  ]RAZ",
+      "REM[  ]REM[  ]REM",
+      "REN[  ]REN[  ]REN",
+      "ROB[  ]ROB[  ]ROB",
+      "ROK[  ]ROK[  ]ROK",
+      "RUM[  ]RUM[  ]RUM"
+    ]
+  ],
+  [
+    "S S S",
+    [
+      "SAD[  ]SAD[  ]SAD",
+      "SAM[  ]SAM[  ]SAM",
+      "SEN[  ]SEN[  ]SEN",
+      "SER[  ]SER[  ]SER",
+      "SET[  ]SET[  ]SET",
+      "SOS[  ]SOS[  ]SOS",
+      "SPA[  ]SPA[  ]SPA",
+      "SUM[  ]SUM[  ]SUM",
+      "SYN[  ]SYN[  ]SYN"
+    ]
+  ],
+  [
+    "T T T",
+    [
+      "TA[  ]TA[  ]TA",
+      "TE[  ]TE[  ]TE",
+      "TO[  ]TO[  ]TO",
+      "TU[  ]TU[  ]TU",
+      "TAK[  ]TAK[  ]TAK",
+      "TAM[  ]TAM[  ]TAM",
+      "TEJ[  ]TEJ[  ]TEJ",
+      "TEN[  ]TEN[  ]TEN",
+      "TIM[  ]TIM[  ]TIM",
+      "TIR[  ]TIR[  ]TIR",
+      "TOM[  ]TOM[  ]TOM",
+      "TON[  ]TON[  ]TON",
+      "TOP[  ]TOP[  ]TOP",
+      "TOR[  ]TOR[  ]TOR",
+      "TUR[  ]TUR[  ]TUR"
+    ]
+  ],
+  [
+    "U U U",
+    [
+      "UDO[  ]UDO[  ]UDO"
+    ]
+  ],
+  [
+    "V V V",
+    [
+      "VAN[  ]VAN[  ]VAN"
+    ]
+  ],
+  [
+    "W W W",
+    [
+      "WE[  ]WE[  ]WE",
+      "WY[  ]WY[  ]WY",
+      "WAM[  ]WAM[  ]WAM",
+      "WAS[  ]WAS[  ]WAS",
+      "WIR[  ]WIR[  ]WIR",
+      "WIT[  ]WIT[  ]WIT",
+      "WUJ[  ]WUJ[  ]WUJ"
+    ]
+  ],
+  [
+    "Z Z Z",
+    [
+      "ZA[  ]ZA[  ]ZA",
+      "ZEN[  ]ZEN[  ]ZEN",
+      "ZEW[  ]ZEW[  ]ZEW"
+    ]
+  ]
+]

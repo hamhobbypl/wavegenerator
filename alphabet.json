@@ -1,0 +1,134 @@
+[
+  [
+    "DATA",
+    [
+      "A[ ]B[ ]C[ ]D[ ]E[ ]F[ ]G[ ]H[ ]I[ ]J[ ]K[ ]L[ ]M[ ]N[ ]O[ ]P[ ]Q[ ]R[ ]S[ ]T[ ]U[ ]V[ ]W[ ]X[ ]Y[ ]Z"
+    ]
+  ],
+  [
+    "A A A",
+    []
+  ],
+  [
+    "B B B",
+    []
+  ],
+  [
+    "C C C",
+    [
+      "ABC[    ]"
+    ]
+  ],
+  [
+    "D D D",
+    []
+  ],
+  [
+    "E E E",
+    []
+  ],
+  [
+    "F F F",
+    [
+      "DEF[    ]"
+    ]
+  ],
+  [
+    "G G G",
+    []
+  ],
+  [
+    "H H H",
+    []
+  ],
+  [
+    "I I I",
+    [
+      "GHI[    ]"
+    ]
+  ],
+  [
+    "J J J",
+    []
+  ],
+  [
+    "K K K",
+    []
+  ],
+  [
+    "L L L",
+    [
+      "JKL[    ]"
+    ]
+  ],
+  [
+    "M M M",
+    []
+  ],
+  [
+    "N N N",
+    []
+  ],
+  [
+    "O O O",
+    [
+      "MNO[    ]"
+    ]
+  ],
+  [
+    "P P P",
+    []
+  ],
+  [
+    "Q Q Q",
+    []
+  ],
+  [
+    "R R R",
+    [
+      "PQR[    ]"
+    ]
+  ],
+  [
+    "S S S",
+    []
+  ],
+  [
+    "T T T",
+    []
+  ],
+  [
+    "U U U",
+    [
+      "STU[    ]"
+    ]
+  ],
+  [
+    "V V V",
+    []
+  ],
+  [
+    "W W W",
+    []
+  ],
+  [
+    "X X X",
+    [
+      "VWX[    ]"
+    ]
+  ],
+  [
+    "Y Y Y",
+    []
+  ],
+  [
+    "Z Z Z",
+    [
+      "YZ[    ]",
+      "[   ]ABC[  ]DEF[  ]GHI[  ]JKL[  ]MNO[  ]PQR[  ]STU[  ]VWX[  ]XYZ",
+      "[   ]ABC[ ]DEF[ ]GHI[ ]JKL[ ]MNO[ ]PQR[ ]STU[ ]VWX[ ]XYZ",
+      "[   ]ABCDE[  ]FGHIJ[  ]KLMNO[  ]PQRST[  ]UVWXYZ",
+      "[  ]ABCDE[ ]FGHIJ[ ]KLMNO[ ]PQRST[ ]UVWXYZ"
+    ]
+  ]
+]
