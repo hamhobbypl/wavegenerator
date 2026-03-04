@@ -1,6 +1,32 @@
+#!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2026 Maniek SP8KM HAMHOBBY.PL
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import argparse
 import json
 import math
 import random
+import sys
+import time
 import wave
 from array import array
 from pathlib import Path
@@ -18,6 +44,59 @@ MORSE = {
     ".": ".-.-.-", ",": "--..--", "?": "..--..", "/": "-..-.", "-": "-....-",
     "(": "-.--.",  ")": "-.--.-",
 }
+
+BANNER_A = r"""
+██   ██  █████  ███    ███ ██   ██  ██████  ██████  ██████  ██    ██
+██   ██ ██   ██ ████  ████ ██   ██ ██    ██ ██   ██ ██   ██  ██  ██
+███████ ███████ ██ ████ ██ ███████ ██    ██ ██████  ██████    ████
+██   ██ ██   ██ ██  ██  ██ ██   ██ ██    ██ ██   ██ ██   ██     ██
+██   ██ ██   ██ ██      ██ ██   ██  ██████  ██████  ██████      ██
+"""
+
+def print_banner_and_license() -> None:
+    print(BANNER_A.strip("\n"))
+    print("(c) 2026 Maniek SP8KM HAMHOBBY.PL — MIT License")
+    print()
+
+class ProgressBar:
+    """Prosty progress bar w jednej linii (jak wget/curl)."""
+    def __init__(self, total: int, label: str = "Generating", width: int = 30, interval_s: float = 0.12):
+        self.total = max(1, int(total))
+        self.label = label
+        self.width = max(10, int(width))
+        self.interval_s = interval_s
+        self.done_count = 0
+        self.t0 = time.time()
+        self._last = 0.0
+
+    def step(self, n: int = 1) -> None:
+        self.done_count = min(self.total, self.done_count + n)
+        self._render()
+
+    def _render(self, force: bool = False) -> None:
+        now = time.time()
+        if not force and (now - self._last) < self.interval_s:
+            return
+        self._last = now
+
+        frac = self.done_count / self.total
+        filled = int(round(frac * self.width))
+        bar = "#" * filled + "-" * (self.width - filled)
+
+        elapsed = max(0.001, now - self.t0)
+        rate = self.done_count / elapsed
+        eta = (self.total - self.done_count) / rate if rate > 0 else 0.0
+
+        pct = int(frac * 100)
+        sys.stdout.write(
+            f"\r{self.label} [{bar}] {pct:3d}%  {self.done_count}/{self.total}  ETA {eta:5.1f}s"
+        )
+        sys.stdout.flush()
+
+    def finish(self, msg: str = "OK") -> None:
+        self._render(force=True)
+        sys.stdout.write(f"\n{msg}\n")
+        sys.stdout.flush()
 
 def farnsworth_scale(wpm: float, fwpm: float) -> float:
     """Rozciągnięcie przerw między literami i wyrazami do Farnsworth."""
@@ -99,7 +178,6 @@ def cw_emit_token(token: str, sr: int, freq: float, wpm: float, fwpm: float, amp
     for ch in token:
         code = MORSE.get(ch)
         if not code:
-            # nieznany znak: mała pauza
             add_samples(out, gen_silence(sr, inter_char))
             first_char = True
             continue
@@ -118,97 +196,275 @@ def cw_emit_token(token: str, sr: int, freq: float, wpm: float, fwpm: float, amp
 
 # -------- build one random pass and render with X/Y/Z --------
 def parse_section_header(header: str) -> list[str]:
-    # "A A A" -> ["A","A","A"]
     return [t for t in header.strip().split() if t]
 
 def split_wordline(raw: str) -> list[str]:
-    # "ADAM[  ]ADAM[  ]ADAM" -> ["ADAM","ADAM","ADAM"]
     s = raw.replace("[  ]", " ")
     return [t for t in s.strip().split() if t]
 
-def render_one_pass(json_path: Path, sr: int, freq: float, wpm: float, fwpm: float,
-                    X: float, Y: float, Z: float,
-                    amp: float = 0.35,
-                    end_silence: float = 0.8) -> array:
+def estimate_total_steps(data) -> int:
+    """
+    Liczymy 'kroki' tak, żeby postęp był stabilny:
+    - 1 krok na sekcję (start)
+    - 1 krok na token nagłówka
+    - 1 krok na linię (raw entry)
+    - 1 krok na każde słowo w linii
+    """
+    steps = 0
+    for hdr, entries in data:
+        steps += 1  # sekcja
+        hdr_tokens = parse_section_header(hdr)
+        steps += len(hdr_tokens)
+        steps += len(entries)  # linie
+        for raw in entries:
+            steps += len(split_wordline(raw))  # słowa
+    return max(1, steps)
+
+def render_one_pass(
+    json_path: Path,
+    sr: int,
+    freq: float,
+    wpm: float,
+    fwpm: float,
+    X: float,
+    Y: float,
+    Z: float,
+    amp: float = 0.35,
+    end_silence: float = 0.8,
+    progress: ProgressBar | None = None,
+) -> array:
     data = json.loads(json_path.read_text(encoding="utf-8"))
 
     sections = [(hdr, entries) for hdr, entries in data]
-    random.shuffle(sections)  # losowa kolejność sekcji
+    random.shuffle(sections)
 
     out = array('h')
+    z_after_line = max(0.0, Z - Y)
 
     for hdr, entries in sections:
-        # ---- nagłówek: A X A X A X ----
-        hdr_tokens = parse_section_header(hdr)
-        for i, tok in enumerate(hdr_tokens):
-            add_samples(out, cw_emit_token(tok, sr, freq, wpm, fwpm, amp=amp))
-            add_samples(out, gen_silence(sr, X))  # po każdej literze nagłówka, także po ostatniej (wg Twojego przykładu)
+        if progress:
+            progress.step(1)  # sekcja
 
-        # ---- linie słów w sekcji ----
+        hdr_tokens = parse_section_header(hdr)
+        for tok in hdr_tokens:
+            add_samples(out, cw_emit_token(tok, sr, freq, wpm, fwpm, amp=amp))
+            add_samples(out, gen_silence(sr, X))
+            if progress:
+                progress.step(1)  # token nagłówka
+
         entries = list(entries)
         random.shuffle(entries)
 
         for raw in entries:
-            words = split_wordline(raw)
+            if progress:
+                progress.step(1)  # linia
 
-            # ADAM Y ADAM Y ADAM Y
+            words = split_wordline(raw)
             for w in words:
                 add_samples(out, cw_emit_token(w, sr, freq, wpm, fwpm, amp=amp))
-                add_samples(out, gen_silence(sr, Y))  # po każdym słowie, także po ostatnim (jak w przykładzie)
+                add_samples(out, gen_silence(sr, Y))
+                if progress:
+                    progress.step(1)  # słowo
 
-            # ... Z (po całej linii słów)
-            add_samples(out, gen_silence(sr, Z))
+            add_samples(out, gen_silence(sr, z_after_line))
 
     add_samples(out, gen_silence(sr, end_silence))
     return out
 
-def write_wav_mono16(path: Path, samples: array, sr: int):
+def write_wav_mono16(path: Path, samples: array, sr: int, progress: ProgressBar | None = None):
     with wave.open(str(path), "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
         wf.setframerate(sr)
-        wf.writeframes(samples.tobytes())
 
-def main():
-    print("=== Generator CW WAV z pliku JSON (X/Y/Z w sekundach) [HAMHOBBY.PL]===")
+        # zapis w kawałkach, żeby można było odświeżać pasek
+        chunk = 8192  # próbek na chunk (możesz zwiększyć)
+        total = len(samples)
+        written = 0
 
-    json_file = input("Ścieżka do pliku JSON [plik.json]: ").strip() or "plik.json"
-    json_path = Path(json_file)
+        while written < total:
+            end = min(total, written + chunk)
+            wf.writeframesraw(samples[written:end].tobytes())
+            written = end
+            if progress:
+                progress._render()  # tylko odśwież (bez zwiększania kroków)
+
+        wf.writeframes(b"")  # finalize
+
+def _positive_float(value: str) -> float:
+    try:
+        f = float(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"niepoprawna liczba: {value!r}") from e
+    if f <= 0:
+        raise argparse.ArgumentTypeError("wartość musi być > 0")
+    return f
+
+def _nonneg_float(value: str) -> float:
+    try:
+        f = float(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"niepoprawna liczba: {value!r}") from e
+    if f < 0:
+        raise argparse.ArgumentTypeError("wartość musi być >= 0")
+    return f
+
+def build_arg_parser() -> argparse.ArgumentParser:
+
+    description = """
+CW WAV generator from JSON file.
+
+Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
+Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
+"""
+
+    epilog = """
+PARAMETRY / PARAMETERS
+----------------------
+
+--wpm
+    PL: prędkość znaków Morse'a w słowach na minutę
+    EN: Morse character speed in words per minute
+
+--fwpm
+    PL: prędkość Farnsworth (wolniejsze odstępy między znakami)
+    EN: Farnsworth speed (slower spacing between characters)
+
+--freq
+    PL: częstotliwość tonu CW w Hz
+    EN: CW tone frequency in Hz
+
+--sr
+    PL: częstotliwość próbkowania WAV
+    EN: WAV sample rate
+
+--x
+    PL: przerwa między literami nagłówka
+    EN: pause between header letters
+
+--y
+    PL: przerwa po każdym słowie
+    EN: pause after each word
+
+--z
+    PL: przerwa po całej grupie słów
+    EN: pause after word group
+
+--amp
+    PL: amplituda tonu (0..1)
+    EN: tone amplitude (0..1)
+
+--end-silence
+    PL: cisza na końcu pliku
+    EN: silence appended at end of file
+
+
+PRZYKŁADY / EXAMPLES
+--------------------
+
+Minimalne użycie / minimal usage:
+
+    python3 cw_gen.py --wpm 20 --fwpm 12 --freq 600
+
+Pełna konfiguracja:
+
+    python3 cw_gen.py --json lesson1.json --out lesson1.wav \
+        --wpm 20 --fwpm 12 --freq 600 \
+        --x 1.0 --y 1.0 --z 3.0
+
+Szybsze CW:
+
+    python3 cw_gen.py --json words.json --out fast.wav \
+        --wpm 30 --fwpm 20 --freq 700
+
+Linux pipeline example:
+
+    python3 cw_gen.py --wpm 25 --fwpm 15 --freq 650 && aplay cw_losowo.wav
+"""
+
+    p = argparse.ArgumentParser(
+        prog="cw_gen.py",
+        description=description,
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    p.add_argument("-j", "--json", default="plik.json",
+                   help="ścieżka do pliku JSON")
+
+    p.add_argument("-o", "--out", default="cw_losowo.wav",
+                   help="plik wynikowy WAV")
+
+    p.add_argument("--wpm", type=_positive_float, required=True,
+                   help="prędkość znaków Morse'a (WPM)")
+
+    p.add_argument("--fwpm", type=_positive_float, required=True,
+                   help="prędkość Farnsworth")
+
+    p.add_argument("--freq", type=_positive_float, required=True,
+                   help="częstotliwość tonu [Hz]")
+
+    p.add_argument("--sr", type=int, default=44100,
+                   help="sample rate WAV")
+
+    p.add_argument("--x", type=_nonneg_float, default=1.0,
+                   help="przerwa między literami nagłówka")
+
+    p.add_argument("--y", type=_nonneg_float, default=1.0,
+                   help="przerwa po słowie")
+
+    p.add_argument("--z", type=_nonneg_float, default=3.0,
+                   help="przerwa po grupie słów")
+
+    p.add_argument("--amp", type=_nonneg_float, default=0.35,
+                   help="amplituda tonu")
+
+    p.add_argument("--end-silence", type=_nonneg_float, default=0.8,
+                   help="cisza na końcu pliku")
+
+    return p
+
+def main(argv: list[str] | None = None) -> int:
+    print_banner_and_license()
+
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+
+    json_path = Path(args.json)
     if not json_path.exists():
-        raise SystemExit(f"Nie znaleziono pliku: {json_path.resolve()}")
+        parser.error(f"Nie znaleziono pliku JSON: {json_path.resolve()}")
 
-    wpm = float(input("WPM (prędkość znaków, np. 20): ").strip())
-    fwpm = float(input("FWPM (Farnsworth, np. 12): ").strip())
-    freq = float(input("Częstotliwość tonu [Hz] (np. 600): ").strip())
+    if args.sr <= 0:
+        parser.error("--sr musi być > 0")
+    if args.amp > 1.0:
+        parser.error("--amp musi być w zakresie 0..1")
 
-    sr_in = input("Sample rate [Hz] (enter=44100): ").strip()
-    sr = int(sr_in) if sr_in else 44100
+    out_path = Path(args.out)
 
-    out_name = input("Nazwa pliku WAV (enter=cw_losowo.wav): ").strip() or "cw_losowo.wav"
-    out_path = Path(out_name)
+    # pre-scan JSON do policzenia kroków (dla paska postępu)
+    data_for_steps = json.loads(json_path.read_text(encoding="utf-8"))
+    total_steps = estimate_total_steps(data_for_steps)
 
-    print("\nUstawienia przerw (sekundy):")
-    X_in = input("przerwa pomiędzy literami nagłówka [s] (enter=1.0): ").strip()
-    Y_in = input("przerwa po każdym słowie [s] (enter=1.0): ").strip()
-    Z_in = input("przerwa po każdej grupie słów [s] (enter=3.0): ").strip()
-
-    X = float(X_in) if X_in else 1.0
-    Y = float(Y_in) if Y_in else 1.0
-    Z = float(Z_in) if Z_in else 3.0
+    progress = ProgressBar(total_steps, label="Generating WAVE", width=30, interval_s=0.12)
 
     samples = render_one_pass(
         json_path=json_path,
-        sr=sr,
-        freq=freq,
-        wpm=wpm,
-        fwpm=fwpm,
-        X=X, Y=Y, Z=Z,
-        amp=0.35,
-        end_silence=0.8
+        sr=args.sr,
+        freq=args.freq,
+        wpm=args.wpm,
+        fwpm=args.fwpm,
+        X=args.x, Y=args.y, Z=args.z,
+        amp=args.amp,
+        end_silence=args.end_silence,
+        progress=progress,
     )
 
-    write_wav_mono16(out_path, samples, sr)
-    print(f"\nOK: zapisano {out_path.resolve()} (samples={len(samples)}, sr={sr})")
+    write_wav_mono16(out_path, samples, args.sr, progress=progress)
+    progress.finish("OK: zapisano plik WAV.")
+
+    print(f"Plik: {out_path.resolve()}")
+    print(f"samples={len(samples)}, sr={args.sr}")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
