@@ -222,8 +222,8 @@ def main():
     header_gap_spaces = int(header_gap_spaces_in) if header_gap_spaces_in else 2
 
     # --- dodatkowa przerwa po każdej linii słów (sekundy) ---
-    wordline_extra_gap_in = input("Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.50): ").strip()
-    wordline_extra_gap_s = float(wordline_extra_gap_in) if wordline_extra_gap_in else 0.50
+    wordline_extra_gap_in = input("Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.5): ").strip()
+    wordline_extra_gap_s = float(wordline_extra_gap_in) if wordline_extra_gap_in else 0.5
 
     # --- bazowa przerwa między liniami (sekundy) ---
     base_line_gap_in = input("Bazowa przerwa między liniami [s] (enter=0.3): ").strip()
