@@ -18,8 +18,8 @@ Nazwa pliku WAV (enter=cw_losowo.wav):
 
 Ile 'długich przerw' (spacji) między literami nagłówka (enter=3): 2
 
-Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.20): 0.5
+Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.5): 0.5
 
-Bazowa przerwa między liniami [s] (enter=0.12): 0.3
+Bazowa przerwa między liniami [s] (enter=0.3): 0.3
 
 OK: zapisano /XXXX/WAVEGENERATOR/cw_losowo.wav (samples=98014692, sr=44100)
