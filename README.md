@@ -72,12 +72,8 @@ Minimalne użycie / minimal usage:
 
 Pełna konfiguracja:
 
-    python3 generuj.py --json lesson1.json --out lesson1.wav         --wpm 20 --fwpm 12 --freq 600         --x 1.0 --y 1.0 --z 3.0
+    python3 generuj.py --json lesson1.json --out lesson1.wav --wpm 20 --fwpm 12 --freq 600 --x 1.0 --y 1.0 --z 3.0
 
 Szybsze CW:
 
-    python3 generuj.py --json words.json --out fast.wav         --wpm 30 --fwpm 20 --freq 700
-
-Linux pipeline example:
-
-    python3 generuj.py --wpm 25 --fwpm 15 --freq 650 && aplay cw_losowo.wav
+    python3 generuj.py --json words.json --out fast.wav  --wpm 30 --fwpm 20 --freq 700
