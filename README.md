@@ -1,10 +1,9 @@
 Generator plików wave z JSON
 
 Przykładowy prompt
+=== Generator CW WAV z pliku JSON (X/Y/Z w sekundach) [Maniek SP8KM]===
 
-=== Generator CW WAV z pliku JSON (sekcje A A A, ... ) ===
-
-Ścieżka do pliku JSON [plik.json]: plik1.json
+Ścieżka do pliku JSON [plik.json]: 
 
 WPM (prędkość znaków, np. 20): 27
 
@@ -16,10 +15,11 @@ Sample rate [Hz] (enter=44100): 44100
 
 Nazwa pliku WAV (enter=cw_losowo.wav): 
 
-Ile 'długich przerw' (spacji) między literami nagłówka (enter=3): 2
+Ustawienia przerw (sekundy):
 
-Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.5): 0.5
+przerwa pomiędzy literami nagłówka [s] (enter=1.0): 
 
-Bazowa przerwa między liniami [s] (enter=0.3): 0.3
+przerwa po każdym słowie [s] (enter=1.0): 
 
-OK: zapisano /XXXX/WAVEGENERATOR/cw_losowo.wav (samples=98014692, sr=44100)
+przerwa po każdej grupie słów [s] (enter=3.0): 
+
