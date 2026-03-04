@@ -1,25 +1,89 @@
-Generator plików wave z JSON
+python3.11 generuj.py --help
+██   ██  █████  ███    ███ ██   ██  ██████  ██████  ██████  ██    ██
+██   ██ ██   ██ ████  ████ ██   ██ ██    ██ ██   ██ ██   ██  ██  ██
+███████ ███████ ██ ████ ██ ███████ ██    ██ ██████  ██████    ████
+██   ██ ██   ██ ██  ██  ██ ██   ██ ██    ██ ██   ██ ██   ██     ██
+██   ██ ██   ██ ██      ██ ██   ██  ██████  ██████  ██████      ██
+(c) 2026 Maniek SP8KM HAMHOBBY.PL — MIT License
 
-Przykładowy prompt
-=== Generator CW WAV z pliku JSON (X/Y/Z w sekundach) [Maniek SP8KM]===
+usage: cw_gen.py [-h] [-j JSON] [-o OUT] --wpm WPM --fwpm FWPM --freq FREQ
+                 [--sr SR] [--x X] [--y Y] [--z Z] [--amp AMP]
+                 [--end-silence END_SILENCE]
 
-Ścieżka do pliku JSON [plik.json]: 
+CW WAV generator from JSON file.
 
-WPM (prędkość znaków, np. 20): 27
+Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
+Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
 
-FWPM (Farnsworth, np. 12): 27
+options:
+  -h, --help            show this help message and exit
+  -j JSON, --json JSON  ścieżka do pliku JSON
+  -o OUT, --out OUT     plik wynikowy WAV
+  --wpm WPM             prędkość znaków Morse'a (WPM)
+  --fwpm FWPM           prędkość Farnsworth
+  --freq FREQ           częstotliwość tonu [Hz]
+  --sr SR               sample rate WAV
+  --x X                 przerwa między literami nagłówka
+  --y Y                 przerwa po słowie
+  --z Z                 przerwa po grupie słów
+  --amp AMP             amplituda tonu
+  --end-silence END_SILENCE
+                        cisza na końcu pliku
 
-Częstotliwość tonu [Hz] (np. 600): 600
+PARAMETRY / PARAMETERS
+----------------------
 
-Sample rate [Hz] (enter=44100): 44100
+--wpm
+    PL: prędkość znaków Morse'a w słowach na minutę
+    EN: Morse character speed in words per minute
 
-Nazwa pliku WAV (enter=cw_losowo.wav): 
+--fwpm
+    PL: prędkość Farnsworth (wolniejsze odstępy między znakami)
+    EN: Farnsworth speed (slower spacing between characters)
 
-Ustawienia przerw (sekundy):
+--freq
+    PL: częstotliwość tonu CW w Hz
+    EN: CW tone frequency in Hz
 
-przerwa pomiędzy literami nagłówka [s] (enter=1.0): 
+--sr
+    PL: częstotliwość próbkowania WAV
+    EN: WAV sample rate
 
-przerwa po każdym słowie [s] (enter=1.0): 
+--x
+    PL: przerwa między literami nagłówka
+    EN: pause between header letters
 
-przerwa po każdej grupie słów [s] (enter=3.0): 
+--y
+    PL: przerwa po każdym słowie
+    EN: pause after each word
 
+--z
+    PL: przerwa po całej grupie słów
+    EN: pause after word group
+
+--amp
+    PL: amplituda tonu (0..1)
+    EN: tone amplitude (0..1)
+
+--end-silence
+    PL: cisza na końcu pliku
+    EN: silence appended at end of file
+
+PRZYKŁADY / EXAMPLES
+--------------------
+
+Minimalne użycie / minimal usage:
+
+    python3 cw_gen.py --wpm 20 --fwpm 12 --freq 600
+
+Pełna konfiguracja:
+
+    python3 cw_gen.py --json lesson1.json --out lesson1.wav         --wpm 20 --fwpm 12 --freq 600         --x 1.0 --y 1.0 --z 3.0
+
+Szybsze CW:
+
+    python3 cw_gen.py --json words.json --out fast.wav         --wpm 30 --fwpm 20 --freq 700
+
+Linux pipeline example:
+
+    python3 cw_gen.py --wpm 25 --fwpm 15 --freq 650 && aplay cw_losowo.wav
