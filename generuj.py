@@ -19,17 +19,16 @@ MORSE = {
     "(": "-.--.",  ")": "-.--.-",
 }
 
-# -------- Farnsworth --------
 def farnsworth_scale(wpm: float, fwpm: float) -> float:
-    """Skala rozciągnięcia przerw między znakami i wyrazami (Farnsworth)."""
+    """Rozciągnięcie przerw między literami i wyrazami do Farnsworth."""
     if fwpm >= wpm:
         return 1.0
 
     dit = 1.2 / wpm
-    target_word_time = 60.0 / fwpm  # sekundy na słowo "PARIS"
+    target_word_time = 60.0 / fwpm  # sekundy na "PARIS"
 
-    fixed_units = 31      # elementy + przerwy wewnątrz liter
-    variable_units = 19   # przerwy między literami (12) + przerwa między wyrazami (7)
+    fixed_units = 31
+    variable_units = 19
 
     fixed_time = fixed_units * dit
     remaining = target_word_time - fixed_time
@@ -41,7 +40,6 @@ def farnsworth_scale(wpm: float, fwpm: float) -> float:
 
 # -------- audio primitives --------
 def gen_tone(sr: int, freq: float, duration_s: float, amp: float = 0.35, ramp_s: float = 0.005) -> array:
-    """Sinus z rampą (anti-click). 16-bit mono."""
     n = int(round(duration_s * sr))
     if n <= 0:
         return array('h')
@@ -56,7 +54,7 @@ def gen_tone(sr: int, freq: float, duration_s: float, amp: float = 0.35, ramp_s:
         t = i / sr
         x = math.sin(two_pi_f * t)
 
-        # cosine ramp in/out
+        # cosine ramp
         if ramp > 0:
             if i < ramp:
                 w = 0.5 - 0.5 * math.cos(math.pi * i / ramp)
@@ -80,28 +78,12 @@ def gen_silence(sr: int, duration_s: float) -> array:
 def add_samples(dst: array, src: array):
     dst.extend(src)
 
-# -------- text -> CW --------
-def text_to_cw_samples(
-    text: str,
-    sr: int,
-    freq: float,
-    wpm: float,
-    fwpm: float,
-    amp: float = 0.35,
-    extra_end_silence_s: float = 0.8,
-    base_line_gap_s: float = 0.12,
-    wordline_extra_gap_s: float = 0.0,     # EXTRA po każdej linii słów (w sekundach)
-    header_line_gap_mult: float = 2.0,     # przerwa między nagłówkiem a słowami = base_line_gap_s * mult
-) -> array:
+# -------- CW encoder (string without spaces; we control gaps ourselves) --------
+def cw_emit_token(token: str, sr: int, freq: float, wpm: float, fwpm: float, amp: float = 0.35) -> array:
     """
-    Zamiana tekstu na CW.
-    - spacja ' ' => przerwa między wyrazami (7 dit * scale); wiele spacji = większa przerwa
-    - przerwa między literami => 3 dit * scale
-    - przerwa wewnątrz litery => 1 dit (bez scale)
-    - newline => pauza:
-        * domyślnie base_line_gap_s
-        * jeśli linia jest nagłówkiem sekcji: base_line_gap_s * header_line_gap_mult
-        * jeśli linia jest linią słów: base_line_gap_s + wordline_extra_gap_s
+    Nadaje token (np. "ADAM" albo "A") jako ciąg znaków Morse'a.
+    Przerwy wewnątrz litery = 1 dit (WPM)
+    Przerwy między literami = 3 dit * scale (Farnsworth)
     """
     dit = 1.2 / wpm
     scale = farnsworth_scale(wpm, fwpm)
@@ -109,98 +91,86 @@ def text_to_cw_samples(
     intra = 1 * dit
     dah = 3 * dit
     inter_char = 3 * dit * scale
-    inter_word = 7 * dit * scale
 
     out = array('h')
-    text = text.upper()
-    lines = text.splitlines()
+    token = token.upper()
 
-    def is_section_header(line: str) -> bool:
-        # rozpoznaj nagłówki w stylu: "A   A   A" (po formatowaniu mogą być wielokrotne spacje)
-        tokens = [t for t in line.strip().split() if t]
-        return len(tokens) == 3 and all(len(t) == 1 and t.isalpha() for t in tokens) and tokens[0] == tokens[1] == tokens[2]
+    first_char = True
+    for ch in token:
+        code = MORSE.get(ch)
+        if not code:
+            # nieznany znak: mała pauza
+            add_samples(out, gen_silence(sr, inter_char))
+            first_char = True
+            continue
 
-    def is_word_line(line: str) -> bool:
-        # wszystko co nie jest nagłówkiem, a ma jakieś znaki alfanumeryczne
-        return (not is_section_header(line)) and any(ch.isalnum() for ch in line)
+        if not first_char:
+            add_samples(out, gen_silence(sr, inter_char))
 
-    for li, line in enumerate(lines):
-        if li > 0:
-            prev_line = lines[li - 1]
-            # przerwa po poprzedniej linii (kontrolujemy ją tutaj)
-            if is_section_header(prev_line):
-                gap = base_line_gap_s * header_line_gap_mult  # 2x większa przerwa po "A A A"
-            elif is_word_line(prev_line):
-                gap = base_line_gap_s + wordline_extra_gap_s  # dodatkowa przerwa po każdym wierszu słów
-            else:
-                gap = base_line_gap_s
+        for ei, e in enumerate(code):
+            add_samples(out, gen_tone(sr, freq, dit if e == "." else dah, amp=amp))
+            if ei != len(code) - 1:
+                add_samples(out, gen_silence(sr, intra))
 
-            add_samples(out, gen_silence(sr, gap))
+        first_char = False
 
-        prev_was_symbol = False
-
-        for ch in line:
-            if ch == " ":
-                add_samples(out, gen_silence(sr, inter_word))
-                prev_was_symbol = False
-                continue
-
-            code = MORSE.get(ch)
-            if not code:
-                add_samples(out, gen_silence(sr, inter_char))
-                prev_was_symbol = False
-                continue
-
-            if prev_was_symbol:
-                add_samples(out, gen_silence(sr, inter_char))
-
-            for ei, e in enumerate(code):
-                add_samples(out, gen_tone(sr, freq, dit if e == "." else dah, amp=amp))
-                if ei != len(code) - 1:
-                    add_samples(out, gen_silence(sr, intra))
-
-            prev_was_symbol = True
-
-    add_samples(out, gen_silence(sr, extra_end_silence_s))
     return out
 
-# -------- building one random pass --------
-def format_section_header(header: str, gap_spaces: int) -> str:
-    tokens = header.strip().split()
-    return (" " * gap_spaces).join(tokens)
+# -------- build one random pass and render with X/Y/Z --------
+def parse_section_header(header: str) -> list[str]:
+    # "A A A" -> ["A","A","A"]
+    return [t for t in header.strip().split() if t]
 
-def build_random_pass_text(json_path: Path, header_gap_spaces: int = 3) -> str:
+def split_wordline(raw: str) -> list[str]:
+    # "ADAM[  ]ADAM[  ]ADAM" -> ["ADAM","ADAM","ADAM"]
+    s = raw.replace("[  ]", " ")
+    return [t for t in s.strip().split() if t]
+
+def render_one_pass(json_path: Path, sr: int, freq: float, wpm: float, fwpm: float,
+                    X: float, Y: float, Z: float,
+                    amp: float = 0.35,
+                    end_silence: float = 0.8) -> array:
     data = json.loads(json_path.read_text(encoding="utf-8"))
 
     sections = [(hdr, entries) for hdr, entries in data]
-    random.shuffle(sections)  # losowa kolejność sekcji; usuń jeśli chcesz A..Z
+    random.shuffle(sections)  # losowa kolejność sekcji
 
-    lines = []
+    out = array('h')
+
     for hdr, entries in sections:
-        # nagłówek sekcji z dłuższymi przerwami (wiele spacji)
-        lines.append(format_section_header(hdr, header_gap_spaces))
+        # ---- nagłówek: A X A X A X ----
+        hdr_tokens = parse_section_header(hdr)
+        for i, tok in enumerate(hdr_tokens):
+            add_samples(out, cw_emit_token(tok, sr, freq, wpm, fwpm, amp=amp))
+            add_samples(out, gen_silence(sr, X))  # po każdej literze nagłówka, także po ostatniej (wg Twojego przykładu)
 
-        # słowa w sekcji
+        # ---- linie słów w sekcji ----
         entries = list(entries)
         random.shuffle(entries)
-        for s in entries:
-            lines.append(s.replace("[  ]", " "))
 
-        # pusta linia między sekcjami (będzie potraktowana jak zwykła linia)
-        lines.append("")
+        for raw in entries:
+            words = split_wordline(raw)
 
-    return "\n".join(lines)
+            # ADAM Y ADAM Y ADAM Y
+            for w in words:
+                add_samples(out, cw_emit_token(w, sr, freq, wpm, fwpm, amp=amp))
+                add_samples(out, gen_silence(sr, Y))  # po każdym słowie, także po ostatnim (jak w przykładzie)
 
-# -------- WAV writer --------
+            # ... Z (po całej linii słów)
+            add_samples(out, gen_silence(sr, Z))
+
+    add_samples(out, gen_silence(sr, end_silence))
+    return out
+
 def write_wav_mono16(path: Path, samples: array, sr: int):
     with wave.open(str(path), "wb") as wf:
         wf.setnchannels(1)
-        wf.setsampwidth(2)  # 16-bit
+        wf.setsampwidth(2)
         wf.setframerate(sr)
         wf.writeframes(samples.tobytes())
 
 def main():
-    print("=== Generator CW WAV z pliku JSON (sekcje A A A, ... ) ===")
+    print("=== Generator CW WAV z pliku JSON (X/Y/Z w sekundach) [Maniek SP8KM]===")
 
     json_file = input("Ścieżka do pliku JSON [plik.json]: ").strip() or "plik.json"
     json_path = Path(json_file)
@@ -217,38 +187,28 @@ def main():
     out_name = input("Nazwa pliku WAV (enter=cw_losowo.wav): ").strip() or "cw_losowo.wav"
     out_path = Path(out_name)
 
-    # --- ustawienia nagłówków sekcji ---
-    header_gap_spaces_in = input("Ile 'długich przerw' (spacji) między literami nagłówka (enter=2): ").strip()
-    header_gap_spaces = int(header_gap_spaces_in) if header_gap_spaces_in else 2
+    print("\nUstawienia przerw (sekundy):")
+    X_in = input("przerwa pomiędzy literami nagłówka [s] (enter=1.0): ").strip()
+    Y_in = input("przerwa po każdym słowie [s] (enter=1.0): ").strip()
+    Z_in = input("przerwa po każdej grupie słów [s] (enter=3.0): ").strip()
 
-    # --- dodatkowa przerwa po każdej linii słów (sekundy) ---
-    wordline_extra_gap_in = input("Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.5): ").strip()
-    wordline_extra_gap_s = float(wordline_extra_gap_in) if wordline_extra_gap_in else 0.5
+    X = float(X_in) if X_in else 1.0
+    Y = float(Y_in) if Y_in else 1.0
+    Z = float(Z_in) if Z_in else 3.0
 
-    # --- bazowa przerwa między liniami (sekundy) ---
-    base_line_gap_in = input("Bazowa przerwa między liniami [s] (enter=0.3): ").strip()
-    base_line_gap_s = float(base_line_gap_in) if base_line_gap_in else 0.3
-
-    # 1) zbuduj jeden losowy przebieg całego materiału
-    text = build_random_pass_text(json_path=json_path, header_gap_spaces=header_gap_spaces)
-
-    # 2) wygeneruj próbki CW
-    samples = text_to_cw_samples(
-        text=text,
+    samples = render_one_pass(
+        json_path=json_path,
         sr=sr,
         freq=freq,
         wpm=wpm,
         fwpm=fwpm,
+        X=X, Y=Y, Z=Z,
         amp=0.35,
-        extra_end_silence_s=0.8,
-        base_line_gap_s=base_line_gap_s,
-        wordline_extra_gap_s=wordline_extra_gap_s,
-        header_line_gap_mult=2.0,  # 2x większa przerwa po nagłówku
+        end_silence=0.8
     )
 
-    # 3) zapisz WAV
     write_wav_mono16(out_path, samples, sr)
-    print(f"OK: zapisano {out_path.resolve()} (samples={len(samples)}, sr={sr})")
+    print(f"\nOK: zapisano {out_path.resolve()} (samples={len(samples)}, sr={sr})")
 
 if __name__ == "__main__":
     main()
