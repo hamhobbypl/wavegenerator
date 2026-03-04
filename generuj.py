@@ -170,7 +170,7 @@ def write_wav_mono16(path: Path, samples: array, sr: int):
         wf.writeframes(samples.tobytes())
 
 def main():
-    print("=== Generator CW WAV z pliku JSON (X/Y/Z w sekundach) [Maniek SP8KM]===")
+    print("=== Generator CW WAV z pliku JSON (X/Y/Z w sekundach) [HAMHOBBY.PL]===")
 
     json_file = input("Ścieżka do pliku JSON [plik.json]: ").strip() or "plik.json"
     json_path = Path(json_file)
