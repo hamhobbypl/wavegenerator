@@ -218,16 +218,16 @@ def main():
     out_path = Path(out_name)
 
     # --- ustawienia nagłówków sekcji ---
-    header_gap_spaces_in = input("Ile 'długich przerw' (spacji) między literami nagłówka (enter=3): ").strip()
-    header_gap_spaces = int(header_gap_spaces_in) if header_gap_spaces_in else 3
+    header_gap_spaces_in = input("Ile 'długich przerw' (spacji) między literami nagłówka (enter=2): ").strip()
+    header_gap_spaces = int(header_gap_spaces_in) if header_gap_spaces_in else 2
 
     # --- dodatkowa przerwa po każdej linii słów (sekundy) ---
-    wordline_extra_gap_in = input("Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.20): ").strip()
-    wordline_extra_gap_s = float(wordline_extra_gap_in) if wordline_extra_gap_in else 0.20
+    wordline_extra_gap_in = input("Dodatkowa przerwa po KAŻDYM wierszu słów [s] (enter=0.50): ").strip()
+    wordline_extra_gap_s = float(wordline_extra_gap_in) if wordline_extra_gap_in else 0.50
 
     # --- bazowa przerwa między liniami (sekundy) ---
-    base_line_gap_in = input("Bazowa przerwa między liniami [s] (enter=0.12): ").strip()
-    base_line_gap_s = float(base_line_gap_in) if base_line_gap_in else 0.12
+    base_line_gap_in = input("Bazowa przerwa między liniami [s] (enter=0.3): ").strip()
+    base_line_gap_s = float(base_line_gap_in) if base_line_gap_in else 0.3
 
     # 1) zbuduj jeden losowy przebieg całego materiału
     text = build_random_pass_text(json_path=json_path, header_gap_spaces=header_gap_spaces)
