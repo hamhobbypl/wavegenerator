@@ -348,7 +348,7 @@ PARAMETRY / PARAMETERS
 
 --z
     PL: przerwa po całej grupie słów, domyślne 3.0s
-    EN: pause after word group, default 1.0s
+    EN: pause after word group, default 3.0s
 
 --amp
     PL: amplituda tonu (0..1) domyślne 0.35
