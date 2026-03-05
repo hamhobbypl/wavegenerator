@@ -246,9 +246,9 @@ def render_one_pass(
             progress.step(1)  # sekcja
 
         hdr_tokens = parse_section_header(hdr)
-        for tok in hdr_tokens:
+        for i, tok in enumerate(hdr_tokens):
             add_samples(out, cw_emit_token(tok, sr, freq, wpm, fwpm, amp=amp))
-            add_samples(out, gen_silence(sr, X))
+            add_samples(out, gen_silence(sr, Y if i == len(hdr_tokens) - 1 else X))
             if progress:
                 progress.step(1)  # token nagłówka
 
@@ -335,28 +335,28 @@ PARAMETRY / PARAMETERS
     EN: CW tone frequency in Hz
 
 --sr
-    PL: częstotliwość próbkowania WAV
-    EN: WAV sample rate
+    PL: częstotliwość próbkowania WAV, domyślne 44100Hz
+    EN: WAV sample rate, default 44100Hz
 
 --x
-    PL: przerwa między literami nagłówka
-    EN: pause between header letters
+    PL: przerwa między literami nagłówka, domyślne 0.5s
+    EN: pause between header letters, default 0.5s
 
 --y
-    PL: przerwa po każdym słowie
-    EN: pause after each word
+    PL: przerwa po każdym słowie, domyślne 1.0s
+    EN: pause after each word, default 1.0s
 
 --z
-    PL: przerwa po całej grupie słów
-    EN: pause after word group
+    PL: przerwa po całej grupie słów, domyślne 3.0s
+    EN: pause after word group, default 1.0s
 
 --amp
-    PL: amplituda tonu (0..1)
-    EN: tone amplitude (0..1)
+    PL: amplituda tonu (0..1) domyślne 0.35
+    EN: tone amplitude (0..1) default 0.35
 
 --end-silence
-    PL: cisza na końcu pliku
-    EN: silence appended at end of file
+    PL: cisza na końcu pliku [s] domyślne 0.8s
+    EN: silence appended at end of file [s] default 0.8s
 
 
 PRZYKŁADY / EXAMPLES
@@ -407,7 +407,7 @@ Linux pipeline example:
     p.add_argument("--sr", type=int, default=44100,
                    help="sample rate WAV")
 
-    p.add_argument("--x", type=_nonneg_float, default=1.0,
+    p.add_argument("--x", type=_nonneg_float, default=0.5,
                    help="przerwa między literami nagłówka")
 
     p.add_argument("--y", type=_nonneg_float, default=1.0,
