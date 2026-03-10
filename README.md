@@ -17,9 +17,9 @@ options:
   --fwpm FWPM           prędkość Farnsworth
   --freq FREQ           częstotliwość tonu [Hz]
   --sr SR               sample rate WAV
-  --x X                 przerwa między literami nagłówka
-  --y Y                 przerwa po słowie
-  --z Z                 przerwa po grupie słów
+  --x X                 przerwa między literami nagłówka [dit]
+  --y Y                 przerwa po słowie [dit]
+  --z Z                 przerwa po grupie słów [dit]
   --amp AMP             amplituda tonu
   --end-silence END_SILENCE
                         cisza na końcu pliku
@@ -44,16 +44,16 @@ PARAMETRY / PARAMETERS
     EN: WAV sample rate
 
 --x
-    PL: przerwa między literami nagłówka
-    EN: pause between header letters
+    PL: przerwa między literami nagłówka [dit]
+    EN: pause between header letters [dit]
 
 --y
-    PL: przerwa po każdym słowie
-    EN: pause after each word
+    PL: przerwa po każdym słowie [dit]
+    EN: pause after each word [dit]
 
 --z
-    PL: przerwa po całej grupie słów
-    EN: pause after word group
+    PL: przerwa po całej grupie słów [dit]
+    EN: pause after word group [dit]
 
 --amp
     PL: amplituda tonu (0..1)
