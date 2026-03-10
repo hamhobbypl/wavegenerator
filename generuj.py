@@ -98,24 +98,13 @@ class ProgressBar:
         sys.stdout.write(f"\n{msg}\n")
         sys.stdout.flush()
 
-def farnsworth_scale(wpm: float, fwpm: float) -> float:
-    """Rozciągnięcie przerw między literami i wyrazami do Farnsworth."""
-    if fwpm >= wpm:
-        return 1.0
+def dit_time_from_speed(speed_wpm: float) -> float:
+    """Czas jednego ditu w sekundach, liczony z zadanej prędkości."""
+    return 1.2 / speed_wpm
 
-    dit = 1.2 / wpm
-    target_word_time = 60.0 / fwpm  # sekundy na "PARIS"
-
-    fixed_units = 31
-    variable_units = 19
-
-    fixed_time = fixed_units * dit
-    remaining = target_word_time - fixed_time
-    if remaining <= 0:
-        return 1.0
-
-    scale = remaining / (variable_units * dit)
-    return max(scale, 1.0)
+def units_to_seconds(units: int, speed_wpm: float) -> float:
+    """Przelicza liczbę jednostek dit na sekundy."""
+    return units * dit_time_from_speed(speed_wpm)
 
 # -------- audio primitives --------
 def gen_tone(sr: int, freq: float, duration_s: float, amp: float = 0.35, ramp_s: float = 0.005) -> array:
@@ -157,19 +146,21 @@ def gen_silence(sr: int, duration_s: float) -> array:
 def add_samples(dst: array, src: array):
     dst.extend(src)
 
-# -------- CW encoder (string without spaces; we control gaps ourselves) --------
-def cw_emit_token(token: str, sr: int, freq: float, wpm: float, fwpm: float, amp: float = 0.35) -> array:
+# -------- CW encoder --------
+def cw_emit_token(token: str, sr: int, freq: float, fwpm: float, amp: float = 0.35) -> array:
     """
     Nadaje token (np. "ADAM" albo "A") jako ciąg znaków Morse'a.
-    Przerwy wewnątrz litery = 1 dit (WPM)
-    Przerwy między literami = 3 dit * scale (Farnsworth)
+    Tutaj cały timing elementów liczony jest z FWPM:
+    - kropka = 1 dit
+    - kreska = 3 dit
+    - przerwa wewnątrz litery = 1 dit
+    - przerwa między literami = 3 dit
     """
-    dit = 1.2 / wpm
-    scale = farnsworth_scale(wpm, fwpm)
+    dit = dit_time_from_speed(fwpm)
 
     intra = 1 * dit
     dah = 3 * dit
-    inter_char = 3 * dit * scale
+    inter_char = 3 * dit
 
     out = array('h')
     token = token.upper()
@@ -224,11 +215,10 @@ def render_one_pass(
     json_path: Path,
     sr: int,
     freq: float,
-    wpm: float,
     fwpm: float,
-    X: float,
-    Y: float,
-    Z: float,
+    X: int,
+    Y: int,
+    Z: int,
     amp: float = 0.35,
     end_silence: float = 0.8,
     progress: ProgressBar | None = None,
@@ -239,7 +229,14 @@ def render_one_pass(
     random.shuffle(sections)
 
     out = array('h')
-    z_after_line = max(0.0, Z - Y)
+
+    # X/Y/Z też liczone od FWPM
+    X_s = units_to_seconds(X, fwpm)
+    Y_s = units_to_seconds(Y, fwpm)
+    Z_s = units_to_seconds(Z, fwpm)
+
+    # Po każdym słowie idzie Y, więc po całej linii dokładamy tylko resztę do Z.
+    z_after_line = max(0.0, Z_s - Y_s)
 
     for hdr, entries in sections:
         if progress:
@@ -247,8 +244,8 @@ def render_one_pass(
 
         hdr_tokens = parse_section_header(hdr)
         for i, tok in enumerate(hdr_tokens):
-            add_samples(out, cw_emit_token(tok, sr, freq, wpm, fwpm, amp=amp))
-            add_samples(out, gen_silence(sr, Y if i == len(hdr_tokens) - 1 else X))
+            add_samples(out, cw_emit_token(tok, sr, freq, fwpm, amp=amp))
+            add_samples(out, gen_silence(sr, Y_s if i == len(hdr_tokens) - 1 else X_s))
             if progress:
                 progress.step(1)  # token nagłówka
 
@@ -261,8 +258,8 @@ def render_one_pass(
 
             words = split_wordline(raw)
             for w in words:
-                add_samples(out, cw_emit_token(w, sr, freq, wpm, fwpm, amp=amp))
-                add_samples(out, gen_silence(sr, Y))
+                add_samples(out, cw_emit_token(w, sr, freq, fwpm, amp=amp))
+                add_samples(out, gen_silence(sr, Y_s))
                 if progress:
                     progress.step(1)  # słowo
 
@@ -277,8 +274,7 @@ def write_wav_mono16(path: Path, samples: array, sr: int, progress: ProgressBar 
         wf.setsampwidth(2)
         wf.setframerate(sr)
 
-        # zapis w kawałkach, żeby można było odświeżać pasek
-        chunk = 8192  # próbek na chunk (możesz zwiększyć)
+        chunk = 8192
         total = len(samples)
         written = 0
 
@@ -287,9 +283,9 @@ def write_wav_mono16(path: Path, samples: array, sr: int, progress: ProgressBar 
             wf.writeframesraw(samples[written:end].tobytes())
             written = end
             if progress:
-                progress._render()  # tylko odśwież (bez zwiększania kroków)
+                progress._render()
 
-        wf.writeframes(b"")  # finalize
+        wf.writeframes(b"")
 
 def _positive_float(value: str) -> float:
     try:
@@ -309,13 +305,22 @@ def _nonneg_float(value: str) -> float:
         raise argparse.ArgumentTypeError("wartość musi być >= 0")
     return f
 
-def build_arg_parser() -> argparse.ArgumentParser:
+def _nonneg_int(value: str) -> int:
+    try:
+        n = int(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"niepoprawna liczba całkowita: {value!r}") from e
+    if n < 0:
+        raise argparse.ArgumentTypeError("wartość musi być >= 0")
+    return n
 
+def build_arg_parser() -> argparse.ArgumentParser:
     description = """
 CW WAV generator from JSON file.
 
 Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
 Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
+Kropka, kreska i X/Y/Z są liczone od FWPM.
 """
 
     epilog = """
@@ -323,12 +328,14 @@ PARAMETRY / PARAMETERS
 ----------------------
 
 --wpm
-    PL: prędkość znaków Morse'a w słowach na minutę
-    EN: Morse character speed in words per minute
+    PL: parametr informacyjny / kompatybilnościowy
+    EN: informational / compatibility parameter
 
 --fwpm
-    PL: prędkość Farnsworth (wolniejsze odstępy między znakami)
-    EN: Farnsworth speed (slower spacing between characters)
+    PL: prędkość, od której liczony jest cały timing CW
+        (kropka, kreska, przerwy oraz X/Y/Z)
+    EN: speed used for the entire CW timing
+        (dot, dash, gaps, and X/Y/Z)
 
 --freq
     PL: częstotliwość tonu CW w Hz
@@ -339,24 +346,41 @@ PARAMETRY / PARAMETERS
     EN: WAV sample rate, default 44100Hz
 
 --x
-    PL: przerwa między literami nagłówka, domyślne 0.5s
-    EN: pause between header letters, default 0.5s
+    PL: przerwa między tokenami nagłówka w jednostkach dit, domyślne 7
+    EN: pause between header tokens in dit units, default 7
 
 --y
-    PL: przerwa po każdym słowie, domyślne 1.0s
-    EN: pause after each word, default 1.0s
+    PL: przerwa po każdym słowie w jednostkach dit, domyślne 21
+    EN: pause after each word in dit units, default 21
 
 --z
-    PL: przerwa po całej grupie słów, domyślne 3.0s
-    EN: pause after word group, default 3.0s
+    PL: całkowita przerwa po grupie słów w jednostkach dit, domyślne 21
+    EN: total pause after word group in dit units, default 21
 
 --amp
-    PL: amplituda tonu (0..1) domyślne 0.35
-    EN: tone amplitude (0..1) default 0.35
+    PL: amplituda tonu (0..1), domyślne 0.35
+    EN: tone amplitude (0..1), default 0.35
 
 --end-silence
-    PL: cisza na końcu pliku [s] domyślne 0.8s
-    EN: silence appended at end of file [s] default 0.8s
+    PL: cisza na końcu pliku [s], domyślne 0.8s
+    EN: silence appended at end of file [s], default 0.8s
+
+
+UWAGI / NOTES
+-------------
+
+1 jednostka = 1 dit = 1.2 / FWPM sekundy
+
+Przykład dla FWPM=12:
+    1 dit = 0.100000 s
+
+Z jest całkowitą przerwą po linii/grupie.
+Ponieważ po każdym słowie i tak dodawane jest Y, po końcu linii skrypt
+dokłada tylko (Z - Y), nie mniej niż zero.
+
+Uwaga:
+    W tej wersji WPM nie steruje już timingiem elementów.
+    Cały timing jest liczony od FWPM.
 
 
 PRZYKŁADY / EXAMPLES
@@ -364,22 +388,23 @@ PRZYKŁADY / EXAMPLES
 
 Minimalne użycie / minimal usage:
 
-    python3 generuj.py --wpm 20 --fwpm 12 --freq 600
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600
 
 Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
-        --wpm 20 --fwpm 12 --freq 600 \
-        --x 1.0 --y 1.0 --z 3.0
+        --wpm 27 --fwpm 27 --freq 600 \
+        --x 7 --y 21 --z 21
 
-Szybsze CW:
+Wolniejsze ćwiczenie:
 
-    python3 generuj.py --json words.json --out fast.wav \
-        --wpm 30 --fwpm 20 --freq 700
+    python3 generuj.py --json words.json --out slow.wav \
+        --wpm 25 --fwpm 10 --freq 700 \
+        --x 7 --y 21 --z 21
 
 Linux pipeline example:
 
-    python3 generuj.py --wpm 25 --fwpm 15 --freq 650 && aplay cw_losowo.wav
+    python3 generuj.py --wpm 25 --fwpm 25 --freq 650 && aplay cw_losowo.wav
 """
 
     p = argparse.ArgumentParser(
@@ -396,10 +421,10 @@ Linux pipeline example:
                    help="plik wynikowy WAV")
 
     p.add_argument("--wpm", type=_positive_float, required=True,
-                   help="prędkość znaków Morse'a (WPM)")
+                   help="parametr informacyjny/kompatybilnościowy")
 
     p.add_argument("--fwpm", type=_positive_float, required=True,
-                   help="prędkość Farnsworth")
+                   help="prędkość używana do całego timingu CW")
 
     p.add_argument("--freq", type=_positive_float, required=True,
                    help="częstotliwość tonu [Hz]")
@@ -407,14 +432,14 @@ Linux pipeline example:
     p.add_argument("--sr", type=int, default=44100,
                    help="sample rate WAV")
 
-    p.add_argument("--x", type=_nonneg_float, default=0.5,
-                   help="przerwa między literami nagłówka")
+    p.add_argument("--x", type=_nonneg_int, default=7,
+                   help="przerwa między tokenami nagłówka [dit units]")
 
-    p.add_argument("--y", type=_nonneg_float, default=1.0,
-                   help="przerwa po słowie")
+    p.add_argument("--y", type=_nonneg_int, default=21,
+                   help="przerwa po słowie [dit units]")
 
-    p.add_argument("--z", type=_nonneg_float, default=3.0,
-                   help="przerwa po grupie słów")
+    p.add_argument("--z", type=_nonneg_int, default=21,
+                   help="przerwa po grupie słów [dit units]")
 
     p.add_argument("--amp", type=_nonneg_float, default=0.35,
                    help="amplituda tonu")
@@ -441,7 +466,6 @@ def main(argv: list[str] | None = None) -> int:
 
     out_path = Path(args.out)
 
-    # pre-scan JSON do policzenia kroków (dla paska postępu)
     data_for_steps = json.loads(json_path.read_text(encoding="utf-8"))
     total_steps = estimate_total_steps(data_for_steps)
 
@@ -451,9 +475,10 @@ def main(argv: list[str] | None = None) -> int:
         json_path=json_path,
         sr=args.sr,
         freq=args.freq,
-        wpm=args.wpm,
         fwpm=args.fwpm,
-        X=args.x, Y=args.y, Z=args.z,
+        X=args.x,
+        Y=args.y,
+        Z=args.z,
         amp=args.amp,
         end_silence=args.end_silence,
         progress=progress,
@@ -464,6 +489,12 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"Plik: {out_path.resolve()}")
     print(f"samples={len(samples)}, sr={args.sr}")
+    print(f"WPM={args.wpm} (informacyjnie)")
+    print(f"FWPM={args.fwpm} (steruje całym timingiem)")
+    print(f"dit={dit_time_from_speed(args.fwpm):.6f}s")
+    print(f"X={args.x} dit -> {units_to_seconds(args.x, args.fwpm):.6f}s")
+    print(f"Y={args.y} dit -> {units_to_seconds(args.y, args.fwpm):.6f}s")
+    print(f"Z={args.z} dit -> {units_to_seconds(args.z, args.fwpm):.6f}s")
     return 0
 
 if __name__ == "__main__":
