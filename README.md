@@ -8,72 +8,85 @@ CW WAV generator from JSON file.
 
 Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
 Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
-
-options:
-  -h, --help            show this help message and exit
-  -j JSON, --json JSON  ścieżka do pliku JSON
-  -o OUT, --out OUT     plik wynikowy WAV
-  --wpm WPM             prędkość znaków Morse'a (WPM)
-  --fwpm FWPM           prędkość Farnsworth
-  --freq FREQ           częstotliwość tonu [Hz]
-  --sr SR               sample rate WAV
-  --x X                 przerwa między literami nagłówka [dit]
-  --y Y                 przerwa po słowie [dit]
-  --z Z                 przerwa po grupie słów [dit]
-  --amp AMP             amplituda tonu
-  --end-silence END_SILENCE
-                        cisza na końcu pliku
+Kropka, kreska i X/Y/Z są liczone od FWPM.
 
 PARAMETRY / PARAMETERS
 ----------------------
 
 --wpm
-    PL: prędkość znaków Morse'a w słowach na minutę
-    EN: Morse character speed in words per minute
+    PL: parametr informacyjny / kompatybilnościowy
+    EN: informational / compatibility parameter
 
 --fwpm
-    PL: prędkość Farnsworth (wolniejsze odstępy między znakami)
-    EN: Farnsworth speed (slower spacing between characters)
+    PL: prędkość, od której liczony jest cały timing CW
+        (kropka, kreska, przerwy oraz X/Y/Z)
+    EN: speed used for the entire CW timing
+        (dot, dash, gaps, and X/Y/Z)
 
 --freq
     PL: częstotliwość tonu CW w Hz
     EN: CW tone frequency in Hz
 
 --sr
-    PL: częstotliwość próbkowania WAV
-    EN: WAV sample rate
+    PL: częstotliwość próbkowania WAV, domyślne 44100Hz
+    EN: WAV sample rate, default 44100Hz
 
 --x
-    PL: przerwa między literami nagłówka [dit]
-    EN: pause between header letters [dit]
+    PL: przerwa między tokenami nagłówka w jednostkach dit, domyślne 7
+    EN: pause between header tokens in dit units, default 7
 
 --y
-    PL: przerwa po każdym słowie [dit]
-    EN: pause after each word [dit]
+    PL: przerwa po słowach wewnątrz linii w jednostkach dit, domyślne 21
+    EN: pause between words inside a line in dit units, default 21
 
 --z
-    PL: przerwa po całej grupie słów [dit]
-    EN: pause after word group [dit]
+    PL: przerwa po ostatnim tokenie nagłówka oraz po ostatnim słowie w linii
+        w jednostkach dit, domyślne 31
+    EN: pause after the last header token and after the last word in a line
+        in dit units, default 31
 
 --amp
-    PL: amplituda tonu (0..1)
-    EN: tone amplitude (0..1)
+    PL: amplituda tonu (0..1), domyślne 0.35
+    EN: tone amplitude (0..1), default 0.35
 
 --end-silence
-    PL: cisza na końcu pliku
-    EN: silence appended at end of file
+    PL: cisza na końcu pliku [s], domyślne 0.8s
+    EN: silence appended at end of file [s], default 0.8s
+
+
+UWAGI / NOTES
+-------------
+
+1 jednostka = 1 dit = 1.2 / FWPM sekundy
+
+Przykład dla FWPM=12:
+    1 dit = 0.100000 s
+
+Układ przerw:
+    - w nagłówku: tokeny rozdzielane są X, a po ostatnim tokenie jest Z
+    - w linii: słowa rozdzielane są Y, a po ostatnim słowie jest Z
+
+Uwaga:
+    W tej wersji WPM nie steruje już timingiem elementów.
+    Cały timing jest liczony od FWPM.
+
 
 PRZYKŁADY / EXAMPLES
 --------------------
 
 Minimalne użycie / minimal usage:
 
-    python3 generuj.py --wpm 20 --fwpm 12 --freq 600
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600
 
 Pełna konfiguracja:
 
-    python3 generuj.py --json lesson1.json --out lesson1.wav --wpm 20 --fwpm 12 --freq 600 --x 1.0 --y 1.0 --z 3.0
+    python3 generuj.py --json lesson1.json --out lesson1.wav \
+        --wpm 27 --fwpm 27 --freq 600 \
+        --x 7 --y 21 --z 31
 
-Szybsze CW:
+Wolniejsze ćwiczenie:
 
+    python3 generuj.py --json words.json --out slow.wav \
+        --wpm 25 --fwpm 10 --freq 700 \
+        --x 7 --y 21 --z 31
     python3 generuj.py --json words.json --out fast.wav  --wpm 30 --fwpm 20 --freq 700
