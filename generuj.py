@@ -25,6 +25,7 @@ import argparse
 import json
 import math
 import random
+import re
 import sys
 import time
 import wave
@@ -53,10 +54,14 @@ BANNER_A = r"""
 ██   ██ ██   ██ ██      ██ ██   ██  ██████  ██████  ██████      ██
 """
 
+SEPARATOR_RE = re.compile(r"\[(\s*)\]")
+
+
 def print_banner_and_license() -> None:
     print(BANNER_A.strip("\n"))
     print("(c) 2026 Maniek SP8KM HAMHOBBY.PL — MIT License")
     print()
+
 
 class ProgressBar:
     """Prosty progress bar w jednej linii (jak wget/curl)."""
@@ -98,13 +103,16 @@ class ProgressBar:
         sys.stdout.write(f"\n{msg}\n")
         sys.stdout.flush()
 
+
 def dit_time_from_speed(speed_wpm: float) -> float:
     """Czas jednego ditu w sekundach, liczony z zadanej prędkości."""
     return 1.2 / speed_wpm
 
+
 def units_to_seconds(units: int, speed_wpm: float) -> float:
     """Przelicza liczbę jednostek dit na sekundy."""
     return units * dit_time_from_speed(speed_wpm)
+
 
 # -------- audio primitives --------
 def gen_tone(sr: int, freq: float, duration_s: float, amp: float = 0.35, ramp_s: float = 0.005) -> array:
@@ -139,12 +147,15 @@ def gen_tone(sr: int, freq: float, duration_s: float, amp: float = 0.35, ramp_s:
 
     return out
 
+
 def gen_silence(sr: int, duration_s: float) -> array:
     n = int(round(duration_s * sr))
     return array('h', [0] * max(0, n))
 
-def add_samples(dst: array, src: array):
+
+def add_samples(dst: array, src: array) -> None:
     dst.extend(src)
+
 
 # -------- CW encoder --------
 def cw_emit_token(token: str, sr: int, freq: float, fwpm: float, amp: float = 0.35) -> array:
@@ -185,13 +196,73 @@ def cw_emit_token(token: str, sr: int, freq: float, fwpm: float, amp: float = 0.
 
     return out
 
-# -------- build one random pass and render with X/Y/Z --------
+
+# -------- parsing helpers --------
 def parse_section_header(header: str) -> list[str]:
     return [t for t in header.strip().split() if t]
 
-def split_wordline(raw: str) -> list[str]:
-    s = raw.replace("[  ]", " ")
-    return [t for t in s.strip().split() if t]
+
+def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[int]]:
+    """
+    Rozbija linię na słowa oraz przerwy między nimi.
+
+    Separator [  ] oznacza przerwę zależną od liczby spacji:
+        gap_units = liczba_spacji * Y
+
+    Przykłady:
+        "ADAM[  ]ADAM"   -> words=["ADAM", "ADAM"], gaps=[2*Y]
+        "A[   ]B[ ]C"    -> words=["A", "B", "C"], gaps=[3*Y, 1*Y]
+
+    Zwykłe białe znaki poza separatorem traktowane są jak separator 1*Y.
+    """
+    parts: list[tuple[str, int | None]] = []
+    pos = 0
+
+    for m in SEPARATOR_RE.finditer(raw):
+        left = raw[pos:m.start()]
+        if left.strip():
+            parts.append(("text", None))
+            parts_text = left.strip()
+            parts[-1] = (parts_text, None)
+
+        spaces_inside = len(m.group(1))
+        gap_units = spaces_inside * y_units_per_space
+        parts.append(("", gap_units))
+        pos = m.end()
+
+    tail = raw[pos:]
+    if tail.strip():
+        parts.append((tail.strip(), None))
+
+    words: list[str] = []
+    gaps: list[int] = []
+
+    for text, gap_units in parts:
+        if gap_units is None:
+            subwords = [t for t in text.split() if t]
+            if not subwords:
+                continue
+
+            if not words:
+                words.append(subwords[0])
+            else:
+                gaps.append(y_units_per_space)
+                words.append(subwords[0])
+
+            for extra in subwords[1:]:
+                gaps.append(y_units_per_space)
+                words.append(extra)
+        else:
+            if not words:
+                continue
+            gaps.append(gap_units)
+
+    # normalizacja: liczba gaps ma być o 1 mniejsza niż liczba words
+    if len(gaps) > max(0, len(words) - 1):
+        gaps = gaps[:len(words) - 1]
+
+    return words, gaps
+
 
 def estimate_total_steps(data) -> int:
     """
@@ -208,9 +279,12 @@ def estimate_total_steps(data) -> int:
         steps += len(hdr_tokens)
         steps += len(entries)  # linie
         for raw in entries:
-            steps += len(split_wordline(raw))  # słowa
+            words, _gaps = parse_wordline(raw, y_units_per_space=1)
+            steps += len(words)
     return max(1, steps)
 
+
+# -------- build one random pass and render with X/Y/Z --------
 def render_one_pass(
     json_path: Path,
     sr: int,
@@ -232,7 +306,6 @@ def render_one_pass(
 
     # X/Y/Z liczone od FWPM
     X_s = units_to_seconds(X, fwpm)
-    Y_s = units_to_seconds(Y, fwpm)
     Z_s = units_to_seconds(Z, fwpm)
 
     for hdr, entries in sections:
@@ -256,20 +329,25 @@ def render_one_pass(
             if progress:
                 progress.step(1)  # linia
 
-            words = split_wordline(raw)
+            words, gaps_units = parse_wordline(raw, y_units_per_space=Y)
+
             for i, w in enumerate(words):
                 add_samples(out, cw_emit_token(w, sr, freq, fwpm, amp=amp))
+
                 if i == len(words) - 1:
                     add_samples(out, gen_silence(sr, Z_s))
                 else:
-                    add_samples(out, gen_silence(sr, Y_s))
+                    gap_units = gaps_units[i] if i < len(gaps_units) else Y
+                    add_samples(out, gen_silence(sr, units_to_seconds(gap_units, fwpm)))
+
                 if progress:
                     progress.step(1)  # słowo
 
     add_samples(out, gen_silence(sr, end_silence))
     return out
 
-def write_wav_mono16(path: Path, samples: array, sr: int, progress: ProgressBar | None = None):
+
+def write_wav_mono16(path: Path, samples: array, sr: int, progress: ProgressBar | None = None) -> None:
     with wave.open(str(path), "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
@@ -288,6 +366,7 @@ def write_wav_mono16(path: Path, samples: array, sr: int, progress: ProgressBar 
 
         wf.writeframes(b"")
 
+
 def _positive_float(value: str) -> float:
     try:
         f = float(value)
@@ -296,6 +375,7 @@ def _positive_float(value: str) -> float:
     if f <= 0:
         raise argparse.ArgumentTypeError("wartość musi być > 0")
     return f
+
 
 def _nonneg_float(value: str) -> float:
     try:
@@ -306,6 +386,7 @@ def _nonneg_float(value: str) -> float:
         raise argparse.ArgumentTypeError("wartość musi być >= 0")
     return f
 
+
 def _nonneg_int(value: str) -> int:
     try:
         n = int(value)
@@ -315,6 +396,7 @@ def _nonneg_int(value: str) -> int:
         raise argparse.ArgumentTypeError("wartość musi być >= 0")
     return n
 
+
 def build_arg_parser() -> argparse.ArgumentParser:
     description = """
 CW WAV generator from JSON file.
@@ -322,6 +404,7 @@ CW WAV generator from JSON file.
 Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
 Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
 Kropka, kreska i X/Y/Z są liczone od FWPM.
+Separator [   ] ma długość zależną od liczby spacji w środku.
 """
 
     epilog = """
@@ -351,8 +434,13 @@ PARAMETRY / PARAMETERS
     EN: pause between header tokens in dit units, default 7
 
 --y
-    PL: przerwa po słowach wewnątrz linii w jednostkach dit, domyślne 21
-    EN: pause between words inside a line in dit units, default 21
+    PL: bazowa przerwa na jedną spację w separatorze [ ]
+        domyślnie 7
+        np.:
+            [ ]   = 1 * Y
+            [  ]  = 2 * Y
+            [   ] = 3 * Y
+    EN: base pause per one space inside [ ], default 7
 
 --z
     PL: przerwa po ostatnim tokenie nagłówka oraz po ostatnim słowie w linii
@@ -379,7 +467,18 @@ Przykład dla FWPM=12:
 
 Układ przerw:
     - w nagłówku: tokeny rozdzielane są X, a po ostatnim tokenie jest Z
-    - w linii: słowa rozdzielane są Y, a po ostatnim słowie jest Z
+    - w linii:
+        separator [ ]   daje 1 * Y
+        separator [  ]  daje 2 * Y
+        separator [   ] daje 3 * Y
+      a po ostatnim słowie jest Z
+
+Separator słów w JSON:
+    Skrypt obsługuje znaczniki:
+        [ ]
+        [  ]
+        [   ]
+    oraz inne warianty z dowolną liczbą spacji w środku nawiasów.
 
 Uwaga:
     W tej wersji WPM nie steruje już timingiem elementów.
@@ -397,13 +496,12 @@ Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 21 --z 31
+        --x 7 --y 7 --z 31
 
-Wolniejsze ćwiczenie:
-
-    python3 generuj.py --json words.json --out slow.wav \
-        --wpm 25 --fwpm 10 --freq 700 \
-        --x 7 --y 21 --z 31
+Przykład separatorów:
+    "ADAM[ ]ADAM"    -> przerwa 1 * Y
+    "ADAM[  ]ADAM"   -> przerwa 2 * Y
+    "ADAM[   ]ADAM"  -> przerwa 3 * Y
 
 Linux pipeline example:
 
@@ -438,8 +536,8 @@ Linux pipeline example:
     p.add_argument("--x", type=_nonneg_int, default=7,
                    help="przerwa między tokenami nagłówka [dit units]")
 
-    p.add_argument("--y", type=_nonneg_int, default=21,
-                   help="przerwa po słowach wewnątrz linii [dit units]")
+    p.add_argument("--y", type=_nonneg_int, default=7,
+                   help="bazowa przerwa na jedną spację w separatorze [ ] [dit units]")
 
     p.add_argument("--z", type=_nonneg_int, default=31,
                    help="przerwa po ostatnim tokenie nagłówka i po ostatnim słowie w linii [dit units]")
@@ -451,6 +549,7 @@ Linux pipeline example:
                    help="cisza na końcu pliku")
 
     return p
+
 
 def main(argv: list[str] | None = None) -> int:
     print_banner_and_license()
@@ -496,9 +595,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"FWPM={args.fwpm} (steruje całym timingiem)")
     print(f"dit={dit_time_from_speed(args.fwpm):.6f}s")
     print(f"X={args.x} dit -> {units_to_seconds(args.x, args.fwpm):.6f}s")
-    print(f"Y={args.y} dit -> {units_to_seconds(args.y, args.fwpm):.6f}s")
+    print(f"Y={args.y} dit na 1 spację w separatorze [ ] -> {units_to_seconds(args.y, args.fwpm):.6f}s")
     print(f"Z={args.z} dit -> {units_to_seconds(args.z, args.fwpm):.6f}s")
+    print("Przykład: [  ] = 2 * Y")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
