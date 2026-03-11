@@ -230,13 +230,10 @@ def render_one_pass(
 
     out = array('h')
 
-    # X/Y/Z też liczone od FWPM
+    # X/Y/Z liczone od FWPM
     X_s = units_to_seconds(X, fwpm)
     Y_s = units_to_seconds(Y, fwpm)
     Z_s = units_to_seconds(Z, fwpm)
-
-    # Po każdym słowie idzie Y, więc po całej linii dokładamy tylko resztę do Z.
-    z_after_line = max(0.0, Z_s - Y_s)
 
     for hdr, entries in sections:
         if progress:
@@ -245,7 +242,10 @@ def render_one_pass(
         hdr_tokens = parse_section_header(hdr)
         for i, tok in enumerate(hdr_tokens):
             add_samples(out, cw_emit_token(tok, sr, freq, fwpm, amp=amp))
-            add_samples(out, gen_silence(sr, Y_s if i == len(hdr_tokens) - 1 else X_s))
+            if i == len(hdr_tokens) - 1:
+                add_samples(out, gen_silence(sr, Z_s))
+            else:
+                add_samples(out, gen_silence(sr, X_s))
             if progress:
                 progress.step(1)  # token nagłówka
 
@@ -257,13 +257,14 @@ def render_one_pass(
                 progress.step(1)  # linia
 
             words = split_wordline(raw)
-            for w in words:
+            for i, w in enumerate(words):
                 add_samples(out, cw_emit_token(w, sr, freq, fwpm, amp=amp))
-                add_samples(out, gen_silence(sr, Y_s))
+                if i == len(words) - 1:
+                    add_samples(out, gen_silence(sr, Z_s))
+                else:
+                    add_samples(out, gen_silence(sr, Y_s))
                 if progress:
                     progress.step(1)  # słowo
-
-            add_samples(out, gen_silence(sr, z_after_line))
 
     add_samples(out, gen_silence(sr, end_silence))
     return out
@@ -350,12 +351,14 @@ PARAMETRY / PARAMETERS
     EN: pause between header tokens in dit units, default 7
 
 --y
-    PL: przerwa po każdym słowie w jednostkach dit, domyślne 21
-    EN: pause after each word in dit units, default 21
+    PL: przerwa po słowach wewnątrz linii w jednostkach dit, domyślne 21
+    EN: pause between words inside a line in dit units, default 21
 
 --z
-    PL: całkowita przerwa po grupie słów w jednostkach dit, domyślne 21
-    EN: total pause after word group in dit units, default 21
+    PL: przerwa po ostatnim tokenie nagłówka oraz po ostatnim słowie w linii
+        w jednostkach dit, domyślne 31
+    EN: pause after the last header token and after the last word in a line
+        in dit units, default 31
 
 --amp
     PL: amplituda tonu (0..1), domyślne 0.35
@@ -374,9 +377,9 @@ UWAGI / NOTES
 Przykład dla FWPM=12:
     1 dit = 0.100000 s
 
-Z jest całkowitą przerwą po linii/grupie.
-Ponieważ po każdym słowie i tak dodawane jest Y, po końcu linii skrypt
-dokłada tylko (Z - Y), nie mniej niż zero.
+Układ przerw:
+    - w nagłówku: tokeny rozdzielane są X, a po ostatnim tokenie jest Z
+    - w linii: słowa rozdzielane są Y, a po ostatnim słowie jest Z
 
 Uwaga:
     W tej wersji WPM nie steruje już timingiem elementów.
@@ -394,13 +397,13 @@ Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 21 --z 21
+        --x 7 --y 21 --z 31
 
 Wolniejsze ćwiczenie:
 
     python3 generuj.py --json words.json --out slow.wav \
         --wpm 25 --fwpm 10 --freq 700 \
-        --x 7 --y 21 --z 21
+        --x 7 --y 21 --z 31
 
 Linux pipeline example:
 
@@ -436,10 +439,10 @@ Linux pipeline example:
                    help="przerwa między tokenami nagłówka [dit units]")
 
     p.add_argument("--y", type=_nonneg_int, default=21,
-                   help="przerwa po słowie [dit units]")
+                   help="przerwa po słowach wewnątrz linii [dit units]")
 
-    p.add_argument("--z", type=_nonneg_int, default=21,
-                   help="przerwa po grupie słów [dit units]")
+    p.add_argument("--z", type=_nonneg_int, default=31,
+                   help="przerwa po ostatnim tokenie nagłówka i po ostatnim słowie w linii [dit units]")
 
     p.add_argument("--amp", type=_nonneg_float, default=0.35,
                    help="amplituda tonu")
