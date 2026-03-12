@@ -6,9 +6,8 @@ Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
 Program może losować sekcje i wpisy albo generować dokładnie po kolei.
 Kropka, kreska i X/Y/Z są liczone od FWPM.
 Separator [   ] ma długość zależną od liczby spacji w środku.
-"""
 
-    epilog = """
+
 PARAMETRY / PARAMETERS
 ----------------------
 
