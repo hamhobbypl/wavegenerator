@@ -284,7 +284,18 @@ def estimate_total_steps(data) -> int:
     return max(1, steps)
 
 
-# -------- build one random pass and render with X/Y/Z --------
+def _parse_bool(value: str) -> bool:
+    v = value.strip().lower()
+    if v in ("true", "1", "yes", "y", "on"):
+        return True
+    if v in ("false", "0", "no", "n", "off"):
+        return False
+    raise argparse.ArgumentTypeError(
+        f"niepoprawna wartość logiczna: {value!r} (użyj true/false)"
+    )
+
+
+# -------- build one pass and render with X/Y/Z --------
 def render_one_pass(
     json_path: Path,
     sr: int,
@@ -293,6 +304,7 @@ def render_one_pass(
     X: int,
     Y: int,
     Z: int,
+    randomize: bool = True,
     amp: float = 0.35,
     end_silence: float = 0.8,
     progress: ProgressBar | None = None,
@@ -300,7 +312,8 @@ def render_one_pass(
     data = json.loads(json_path.read_text(encoding="utf-8"))
 
     sections = [(hdr, entries) for hdr, entries in data]
-    random.shuffle(sections)
+    if randomize:
+        random.shuffle(sections)
 
     out = array('h')
 
@@ -323,7 +336,8 @@ def render_one_pass(
                 progress.step(1)  # token nagłówka
 
         entries = list(entries)
-        random.shuffle(entries)
+        if randomize:
+            random.shuffle(entries)
 
         for raw in entries:
             if progress:
@@ -402,7 +416,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 CW WAV generator from JSON file.
 
 Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
-Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
+Program może losować sekcje i wpisy albo generować dokładnie po kolei.
 Kropka, kreska i X/Y/Z są liczone od FWPM.
 Separator [   ] ma długość zależną od liczby spacji w środku.
 """
@@ -448,6 +462,14 @@ PARAMETRY / PARAMETERS
     EN: pause after the last header token and after the last word in a line
         in dit units, default 31
 
+--random
+    PL: włącza lub wyłącza losowanie sekcji i wpisów
+        true  = losowo
+        false = po kolei z pliku JSON
+    EN: enables or disables shuffling of sections and entries
+        true  = random
+        false = in file order
+
 --amp
     PL: amplituda tonu (0..1), domyślne 0.35
     EN: tone amplitude (0..1), default 0.35
@@ -492,11 +514,19 @@ Minimalne użycie / minimal usage:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600
 
+Losowość włączona:
+
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random true
+
+Bez losowości:
+
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random false
+
 Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 7 --z 31
+        --x 7 --y 7 --z 31 --random true
 
 Przykład separatorów:
     "ADAM[ ]ADAM"    -> przerwa 1 * Y
@@ -505,7 +535,7 @@ Przykład separatorów:
 
 Linux pipeline example:
 
-    python3 generuj.py --wpm 25 --fwpm 25 --freq 650 && aplay cw_losowo.wav
+    python3 generuj.py --wpm 25 --fwpm 25 --freq 650 --random false && aplay cw_losowo.wav
 """
 
     p = argparse.ArgumentParser(
@@ -541,6 +571,9 @@ Linux pipeline example:
 
     p.add_argument("--z", type=_nonneg_int, default=31,
                    help="przerwa po ostatnim tokenie nagłówka i po ostatnim słowie w linii [dit units]")
+
+    p.add_argument("--random", type=_parse_bool, default=True,
+                   help="losowość: true = włączona, false = wyłączona")
 
     p.add_argument("--amp", type=_nonneg_float, default=0.35,
                    help="amplituda tonu")
@@ -581,6 +614,7 @@ def main(argv: list[str] | None = None) -> int:
         X=args.x,
         Y=args.y,
         Z=args.z,
+        randomize=args.random,
         amp=args.amp,
         end_silence=args.end_silence,
         progress=progress,
@@ -593,6 +627,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"samples={len(samples)}, sr={args.sr}")
     print(f"WPM={args.wpm} (informacyjnie)")
     print(f"FWPM={args.fwpm} (steruje całym timingiem)")
+    print(f"Random={'ON' if args.random else 'OFF'}")
     print(f"dit={dit_time_from_speed(args.fwpm):.6f}s")
     print(f"X={args.x} dit -> {units_to_seconds(args.x, args.fwpm):.6f}s")
     print(f"Y={args.y} dit na 1 spację w separatorze [ ] -> {units_to_seconds(args.y, args.fwpm):.6f}s")
