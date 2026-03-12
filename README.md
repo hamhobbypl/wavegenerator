@@ -1,15 +1,14 @@
 (c) 2026 Maniek SP8KM HAMHOBBY.PL — MIT License
 
-usage: generuj.py [-h] [-j JSON] [-o OUT] --wpm WPM --fwpm FWPM --freq FREQ
-                 [--sr SR] [--x X] [--y Y] [--z Z] [--amp AMP]
-                 [--end-silence END_SILENCE]
-
 CW WAV generator from JSON file.
 
 Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
-Program losuje sekcje i generuje sygnał CW z zadanymi przerwami.
+Program może losować sekcje i wpisy albo generować dokładnie po kolei.
 Kropka, kreska i X/Y/Z są liczone od FWPM.
+Separator [   ] ma długość zależną od liczby spacji w środku.
+"""
 
+    epilog = """
 PARAMETRY / PARAMETERS
 ----------------------
 
@@ -36,14 +35,27 @@ PARAMETRY / PARAMETERS
     EN: pause between header tokens in dit units, default 7
 
 --y
-    PL: przerwa po słowach wewnątrz linii w jednostkach dit, domyślne 21
-    EN: pause between words inside a line in dit units, default 21
+    PL: bazowa przerwa na jedną spację w separatorze [ ]
+        domyślnie 7
+        np.:
+            [ ]   = 1 * Y
+            [  ]  = 2 * Y
+            [   ] = 3 * Y
+    EN: base pause per one space inside [ ], default 7
 
 --z
     PL: przerwa po ostatnim tokenie nagłówka oraz po ostatnim słowie w linii
         w jednostkach dit, domyślne 31
     EN: pause after the last header token and after the last word in a line
         in dit units, default 31
+
+--random
+    PL: włącza lub wyłącza losowanie sekcji i wpisów
+        true  = losowo
+        false = po kolei z pliku JSON
+    EN: enables or disables shuffling of sections and entries
+        true  = random
+        false = in file order
 
 --amp
     PL: amplituda tonu (0..1), domyślne 0.35
@@ -64,7 +76,18 @@ Przykład dla FWPM=12:
 
 Układ przerw:
     - w nagłówku: tokeny rozdzielane są X, a po ostatnim tokenie jest Z
-    - w linii: słowa rozdzielane są Y, a po ostatnim słowie jest Z
+    - w linii:
+        separator [ ]   daje 1 * Y
+        separator [  ]  daje 2 * Y
+        separator [   ] daje 3 * Y
+      a po ostatnim słowie jest Z
+
+Separator słów w JSON:
+    Skrypt obsługuje znaczniki:
+        [ ]
+        [  ]
+        [   ]
+    oraz inne warianty z dowolną liczbą spacji w środku nawiasów.
 
 Uwaga:
     W tej wersji WPM nie steruje już timingiem elementów.
@@ -78,15 +101,25 @@ Minimalne użycie / minimal usage:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600
 
+Losowość włączona:
+
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random true
+
+Bez losowości:
+
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random false
+
 Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 21 --z 31
+        --x 7 --y 7 --z 31 --random true
 
-Wolniejsze ćwiczenie:
+Przykład separatorów:
+    "ADAM[ ]ADAM"    -> przerwa 1 * Y
+    "ADAM[  ]ADAM"   -> przerwa 2 * Y
+    "ADAM[   ]ADAM"  -> przerwa 3 * Y
 
-    python3 generuj.py --json words.json --out slow.wav \
-        --wpm 25 --fwpm 10 --freq 700 \
-        --x 7 --y 21 --z 31
-    python3 generuj.py --json words.json --out fast.wav  --wpm 30 --fwpm 20 --freq 700
+Linux pipeline example:
+
+    python3 generuj.py --wpm 25 --fwpm 25 --freq 650 --random false && aplay cw_losowo.wav
