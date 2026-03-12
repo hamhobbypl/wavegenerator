@@ -6,11 +6,7 @@ Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
 Program może losować sekcje i wpisy albo generować dokładnie po kolei.
 Kropka, kreska i X/Y/Z są liczone od FWPM.
 Separator [   ] ma długość zależną od liczby spacji w środku.
-<<<<<<< HEAD
 """
-=======
-
->>>>>>> 70bf7d918327753be7f67ec148e773122d5fd5e5
 
     epilog = """
 PARAMETRY / PARAMETERS
@@ -116,13 +112,10 @@ Minimalne użycie / minimal usage:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600
 
-<<<<<<< HEAD
 Łagodniejsza rampa:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 550 --amp 0.6 --ramp 0.008
 
-=======
->>>>>>> 70bf7d918327753be7f67ec148e773122d5fd5e5
 Losowość włączona:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random true
@@ -135,11 +128,7 @@ Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-<<<<<<< HEAD
         --x 7 --y 7 --z 31 --random true --amp 0.6 --ramp 0.008
-=======
-        --x 7 --y 7 --z 31 --random true
->>>>>>> 70bf7d918327753be7f67ec148e773122d5fd5e5
 
 Przykład separatorów:
     "ADAM[ ]ADAM"    -> przerwa 1 * Y
@@ -148,8 +137,4 @@ Przykład separatorów:
 
 Linux pipeline example:
 
-<<<<<<< HEAD
     python3 generuj.py --wpm 25 --fwpm 25 --freq 550 --amp 0.6 --ramp 0.008 --random false && aplay cw_losowo.wav
-=======
-    python3 generuj.py --wpm 25 --fwpm 25 --freq 650 --random false && aplay cw_losowo.wav
->>>>>>> 70bf7d918327753be7f67ec148e773122d5fd5e5
