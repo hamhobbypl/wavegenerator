@@ -115,7 +115,13 @@ def units_to_seconds(units: int, speed_wpm: float) -> float:
 
 
 # -------- audio primitives --------
-def gen_tone(sr: int, freq: float, duration_s: float, amp: float = 0.35, ramp_s: float = 0.005) -> array:
+def gen_tone(
+    sr: int,
+    freq: float,
+    duration_s: float,
+    amp: float = 0.6,
+    ramp_s: float = 0.005
+) -> array:
     n = int(round(duration_s * sr))
     if n <= 0:
         return array('h')
@@ -158,7 +164,14 @@ def add_samples(dst: array, src: array) -> None:
 
 
 # -------- CW encoder --------
-def cw_emit_token(token: str, sr: int, freq: float, fwpm: float, amp: float = 0.35) -> array:
+def cw_emit_token(
+    token: str,
+    sr: int,
+    freq: float,
+    fwpm: float,
+    amp: float = 0.6,
+    ramp_s: float = 0.005
+) -> array:
     """
     Nadaje token (np. "ADAM" albo "A") jako ciąg znaków Morse'a.
     Tutaj cały timing elementów liczony jest z FWPM:
@@ -188,7 +201,16 @@ def cw_emit_token(token: str, sr: int, freq: float, fwpm: float, amp: float = 0.
             add_samples(out, gen_silence(sr, inter_char))
 
         for ei, e in enumerate(code):
-            add_samples(out, gen_tone(sr, freq, dit if e == "." else dah, amp=amp))
+            add_samples(
+                out,
+                gen_tone(
+                    sr,
+                    freq,
+                    dit if e == "." else dah,
+                    amp=amp,
+                    ramp_s=ramp_s,
+                )
+            )
             if ei != len(code) - 1:
                 add_samples(out, gen_silence(sr, intra))
 
@@ -305,7 +327,8 @@ def render_one_pass(
     Y: int,
     Z: int,
     randomize: bool = True,
-    amp: float = 0.35,
+    amp: float = 0.6,
+    ramp_s: float = 0.005,
     end_silence: float = 0.8,
     progress: ProgressBar | None = None,
 ) -> array:
@@ -327,7 +350,17 @@ def render_one_pass(
 
         hdr_tokens = parse_section_header(hdr)
         for i, tok in enumerate(hdr_tokens):
-            add_samples(out, cw_emit_token(tok, sr, freq, fwpm, amp=amp))
+            add_samples(
+                out,
+                cw_emit_token(
+                    tok,
+                    sr,
+                    freq,
+                    fwpm,
+                    amp=amp,
+                    ramp_s=ramp_s,
+                )
+            )
             if i == len(hdr_tokens) - 1:
                 add_samples(out, gen_silence(sr, Z_s))
             else:
@@ -346,7 +379,17 @@ def render_one_pass(
             words, gaps_units = parse_wordline(raw, y_units_per_space=Y)
 
             for i, w in enumerate(words):
-                add_samples(out, cw_emit_token(w, sr, freq, fwpm, amp=amp))
+                add_samples(
+                    out,
+                    cw_emit_token(
+                        w,
+                        sr,
+                        freq,
+                        fwpm,
+                        amp=amp,
+                        ramp_s=ramp_s,
+                    )
+                )
 
                 if i == len(words) - 1:
                     add_samples(out, gen_silence(sr, Z_s))
@@ -471,8 +514,12 @@ PARAMETRY / PARAMETERS
         false = in file order
 
 --amp
-    PL: amplituda tonu (0..1), domyślne 0.35
-    EN: tone amplitude (0..1), default 0.35
+    PL: amplituda tonu (0..1), domyślnie 0.6
+    EN: tone amplitude (0..1), default 0.6
+
+--ramp
+    PL: czas narastania/opadania obwiedni tonu [s], domyślnie 0.005
+    EN: rise/fall envelope time [s], default 0.005
 
 --end-silence
     PL: cisza na końcu pliku [s], domyślne 0.8s
@@ -506,6 +553,13 @@ Uwaga:
     W tej wersji WPM nie steruje już timingiem elementów.
     Cały timing jest liczony od FWPM.
 
+Ramp / envelope:
+    --ramp steruje łagodnym wejściem i zejściem tonu.
+    Typowe wartości:
+        0.003  = szybszy atak
+        0.005  = standard
+        0.008  = łagodniejszy atak
+        0.010  = bardzo miękki atak
 
 PRZYKŁADY / EXAMPLES
 --------------------
@@ -513,6 +567,10 @@ PRZYKŁADY / EXAMPLES
 Minimalne użycie / minimal usage:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600
+
+Łagodniejsza rampa:
+
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 550 --amp 0.6 --ramp 0.008
 
 Losowość włączona:
 
@@ -526,7 +584,7 @@ Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 7 --z 31 --random true
+        --x 7 --y 7 --z 31 --random true --amp 0.6 --ramp 0.008
 
 Przykład separatorów:
     "ADAM[ ]ADAM"    -> przerwa 1 * Y
@@ -535,7 +593,7 @@ Przykład separatorów:
 
 Linux pipeline example:
 
-    python3 generuj.py --wpm 25 --fwpm 25 --freq 650 --random false && aplay cw_losowo.wav
+    python3 generuj.py --wpm 25 --fwpm 25 --freq 550 --amp 0.6 --ramp 0.008 --random false && aplay cw_losowo.wav
 """
 
     p = argparse.ArgumentParser(
@@ -575,8 +633,11 @@ Linux pipeline example:
     p.add_argument("--random", type=_parse_bool, default=True,
                    help="losowość: true = włączona, false = wyłączona")
 
-    p.add_argument("--amp", type=_nonneg_float, default=0.35,
+    p.add_argument("--amp", type=_nonneg_float, default=0.6,
                    help="amplituda tonu")
+
+    p.add_argument("--ramp", type=_nonneg_float, default=0.005,
+                   help="czas narastania/opadania tonu [s]")
 
     p.add_argument("--end-silence", type=_nonneg_float, default=0.8,
                    help="cisza na końcu pliku")
@@ -616,6 +677,7 @@ def main(argv: list[str] | None = None) -> int:
         Z=args.z,
         randomize=args.random,
         amp=args.amp,
+        ramp_s=args.ramp,
         end_silence=args.end_silence,
         progress=progress,
     )
@@ -628,6 +690,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"WPM={args.wpm} (informacyjnie)")
     print(f"FWPM={args.fwpm} (steruje całym timingiem)")
     print(f"Random={'ON' if args.random else 'OFF'}")
+    print(f"freq={args.freq:.2f} Hz")
+    print(f"amp={args.amp:.3f}")
+    print(f"ramp={args.ramp:.6f}s")
     print(f"dit={dit_time_from_speed(args.fwpm):.6f}s")
     print(f"X={args.x} dit -> {units_to_seconds(args.x, args.fwpm):.6f}s")
     print(f"Y={args.y} dit na 1 spację w separatorze [ ] -> {units_to_seconds(args.y, args.fwpm):.6f}s")
