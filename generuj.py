@@ -243,9 +243,7 @@ def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[in
     for m in SEPARATOR_RE.finditer(raw):
         left = raw[pos:m.start()]
         if left.strip():
-            parts.append(("text", None))
-            parts_text = left.strip()
-            parts[-1] = (parts_text, None)
+            parts.append((left.strip(), None))
 
         spaces_inside = len(m.group(1))
         gap_units = spaces_inside * y_units_per_space
@@ -258,6 +256,7 @@ def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[in
 
     words: list[str] = []
     gaps: list[int] = []
+    pending_explicit_gap = False
 
     for text, gap_units in parts:
         if gap_units is None:
@@ -265,19 +264,23 @@ def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[in
             if not subwords:
                 continue
 
-            if not words:
-                words.append(subwords[0])
-            else:
-                gaps.append(y_units_per_space)
-                words.append(subwords[0])
+            for i, subword in enumerate(subwords):
+                if not words:
+                    words.append(subword)
+                else:
+                    if pending_explicit_gap and i == 0:
+                        # przerwa została już dodana przez [ ... ]
+                        words.append(subword)
+                    else:
+                        gaps.append(y_units_per_space)
+                        words.append(subword)
 
-            for extra in subwords[1:]:
-                gaps.append(y_units_per_space)
-                words.append(extra)
+            pending_explicit_gap = False
         else:
             if not words:
                 continue
             gaps.append(gap_units)
+            pending_explicit_gap = True
 
     # normalizacja: liczba gaps ma być o 1 mniejsza niż liczba words
     if len(gaps) > max(0, len(words) - 1):
