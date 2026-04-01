@@ -332,6 +332,7 @@ def render_one_pass(
     randomize: bool = True,
     amp: float = 0.6,
     ramp_s: float = 0.005,
+    start_silence: float = 0.8,
     end_silence: float = 0.8,
     progress: ProgressBar | None = None,
 ) -> array:
@@ -342,6 +343,9 @@ def render_one_pass(
         random.shuffle(sections)
 
     out = array('h')
+
+    # cisza na początku pliku
+    add_samples(out, gen_silence(sr, start_silence))
 
     # X/Y/Z liczone od FWPM
     X_s = units_to_seconds(X, fwpm)
@@ -524,6 +528,10 @@ PARAMETRY / PARAMETERS
     PL: czas narastania/opadania obwiedni tonu [s], domyślnie 0.005
     EN: rise/fall envelope time [s], default 0.005
 
+--start-silence
+    PL: cisza na początku pliku [s], domyślnie 0.8s
+    EN: silence prepended at beginning of file [s], default 0.8s
+
 --end-silence
     PL: cisza na końcu pliku [s], domyślne 0.8s
     EN: silence appended at end of file [s], default 0.8s
@@ -583,11 +591,16 @@ Bez losowości:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random false
 
+Z ciszą na początku i końcu:
+
+    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --start-silence 0.8 --end-silence 0.8
+
 Pełna konfiguracja:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 7 --z 31 --random true --amp 0.6 --ramp 0.008
+        --x 7 --y 7 --z 31 --random true --amp 0.6 --ramp 0.008 \
+        --start-silence 0.8 --end-silence 0.8
 
 Przykład separatorów:
     "ADAM[ ]ADAM"    -> przerwa 1 * Y
@@ -596,7 +609,8 @@ Przykład separatorów:
 
 Linux pipeline example:
 
-    python3 generuj.py --wpm 25 --fwpm 25 --freq 550 --amp 0.6 --ramp 0.008 --random false && aplay cw_losowo.wav
+    python3 generuj.py --wpm 25 --fwpm 25 --freq 550 --amp 0.6 --ramp 0.008 \
+        --random false --start-silence 0.8 --end-silence 0.8 && aplay cw_losowo.wav
 """
 
     p = argparse.ArgumentParser(
@@ -642,6 +656,9 @@ Linux pipeline example:
     p.add_argument("--ramp", type=_nonneg_float, default=0.005,
                    help="czas narastania/opadania tonu [s]")
 
+    p.add_argument("--start-silence", type=_nonneg_float, default=0.8,
+                   help="cisza na początku pliku")
+
     p.add_argument("--end-silence", type=_nonneg_float, default=0.8,
                    help="cisza na końcu pliku")
 
@@ -681,6 +698,7 @@ def main(argv: list[str] | None = None) -> int:
         randomize=args.random,
         amp=args.amp,
         ramp_s=args.ramp,
+        start_silence=args.start_silence,
         end_silence=args.end_silence,
         progress=progress,
     )
@@ -696,6 +714,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"freq={args.freq:.2f} Hz")
     print(f"amp={args.amp:.3f}")
     print(f"ramp={args.ramp:.6f}s")
+    print(f"start_silence={args.start_silence:.6f}s")
+    print(f"end_silence={args.end_silence:.6f}s")
     print(f"dit={dit_time_from_speed(args.fwpm):.6f}s")
     print(f"X={args.x} dit -> {units_to_seconds(args.x, args.fwpm):.6f}s")
     print(f"Y={args.y} dit na 1 spację w separatorze [ ] -> {units_to_seconds(args.y, args.fwpm):.6f}s")
