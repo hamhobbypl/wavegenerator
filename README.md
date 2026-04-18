@@ -1,140 +1,262 @@
-(c) 2026 Maniek SP8KM HAMHOBBY.PL — MIT License
+# 🎧 CW WAV Generator (Morse Code)
 
-CW WAV generator from JSON file.
+Generator plików WAV z kodem Morse’a na podstawie pliku JSON.  
+Generuje realistyczny sygnał CW z pełną kontrolą timingu (FWPM), przerw (X/Y/Z) oraz parametrów audio.
 
-Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
-Program może losować sekcje i wpisy albo generować dokładnie po kolei.
-Kropka, kreska i X/Y/Z są liczone od FWPM.
-Separator [   ] ma długość zależną od liczby spacji w środku.
-"""
+---
 
-    epilog = """
-PARAMETRY / PARAMETERS
-----------------------
+# 🇵🇱 Polski
 
---wpm
-    PL: parametr informacyjny / kompatybilnościowy
-    EN: informational / compatibility parameter
+## 📌 Opis
 
---fwpm
-    PL: prędkość, od której liczony jest cały timing CW
-        (kropka, kreska, przerwy oraz X/Y/Z)
-    EN: speed used for the entire CW timing
-        (dot, dash, gaps, and X/Y/Z)
+Skrypt generuje plik WAV zawierający kod Morse’a na podstawie struktury JSON.  
+Może działać w trybie losowym lub deterministycznym.
 
---freq
-    PL: częstotliwość tonu CW w Hz
-    EN: CW tone frequency in Hz
+Obsługuje:
+- alfabet A–Z i cyfry 0–9
+- znaki specjalne (. , ? / - ( ))
+- dynamiczne przerwy `[   ]`
+- realistyczną obwiednię audio (brak kliknięć)
 
---sr
-    PL: częstotliwość próbkowania WAV, domyślne 44100Hz
-    EN: WAV sample rate, default 44100Hz
+---
 
---x
-    PL: przerwa między tokenami nagłówka w jednostkach dit, domyślne 7
-    EN: pause between header tokens in dit units, default 7
+## ⚙️ Wymagania
 
---y
-    PL: bazowa przerwa na jedną spację w separatorze [ ]
-        domyślnie 7
-        np.:
-            [ ]   = 1 * Y
-            [  ]  = 2 * Y
-            [   ] = 3 * Y
-    EN: base pause per one space inside [ ], default 7
+- Python 3.8+
+- brak dodatkowych bibliotek
 
---z
-    PL: przerwa po ostatnim tokenie nagłówka oraz po ostatnim słowie w linii
-        w jednostkach dit, domyślne 31
-    EN: pause after the last header token and after the last word in a line
-        in dit units, default 31
+---
 
---random
-    PL: włącza lub wyłącza losowanie sekcji i wpisów
-        true  = losowo
-        false = po kolei z pliku JSON
-    EN: enables or disables shuffling of sections and entries
-        true  = random
-        false = in file order
+## ▶️ Uruchomienie
 
---amp
-    PL: amplituda tonu (0..1), domyślnie 0.6
-    EN: tone amplitude (0..1), default 0.6
+```bash
+python3 generuj.py --wpm 25 --fwpm 25 --freq 600
+```
 
---ramp
-    PL: czas narastania/opadania obwiedni tonu [s], domyślnie 0.005
-    EN: rise/fall envelope time [s], default 0.005
+---
 
---end-silence
-    PL: cisza na końcu pliku [s], domyślne 0.8s
-    EN: silence appended at end of file [s], default 0.8s
+## 📥 Parametry
 
+| Parametr | Opis |
+|----------|------|
+| `--wpm` | informacyjny |
+| `--fwpm` | steruje całym timingiem CW |
+| `--freq` | częstotliwość tonu (Hz) |
+| `--x` | przerwa między tokenami nagłówka |
+| `--y` | bazowa przerwa dla `[ ]` |
+| `--z` | przerwa końcowa |
+| `--random` | losowanie danych |
+| `--amp` | amplituda (0–1) |
+| `--ramp` | czas narastania/opadania |
+| `--start-silence` | cisza na początku |
+| `--end-silence` | cisza na końcu |
 
-UWAGI / NOTES
--------------
+---
 
-1 jednostka = 1 dit = 1.2 / FWPM sekundy
+## ⏱️ Timing
 
-Przykład dla FWPM=12:
-    1 dit = 0.100000 s
+```
+dit = 1.2 / FWPM
+```
 
-Układ przerw:
-    - w nagłówku: tokeny rozdzielane są X, a po ostatnim tokenie jest Z
-    - w linii:
-        separator [ ]   daje 1 * Y
-        separator [  ]  daje 2 * Y
-        separator [   ] daje 3 * Y
-      a po ostatnim słowie jest Z
+---
 
-Separator słów w JSON:
-    Skrypt obsługuje znaczniki:
-        [ ]
-        [  ]
-        [   ]
-    oraz inne warianty z dowolną liczbą spacji w środku nawiasów.
+## 🧩 Separator `[   ]`
 
-Uwaga:
-    W tej wersji WPM nie steruje już timingiem elementów.
-    Cały timing jest liczony od FWPM.
+```
+[ ]   = 1 × Y
+[  ]  = 2 × Y
+[   ] = 3 × Y
+```
 
-Ramp / envelope:
-    --ramp steruje łagodnym wejściem i zejściem tonu.
-    Typowe wartości:
-        0.003  = szybszy atak
-        0.005  = standard
-        0.008  = łagodniejszy atak
-        0.010  = bardzo miękki atak
+---
 
-PRZYKŁADY / EXAMPLES
---------------------
+## 📄 Przykład JSON
 
-Minimalne użycie / minimal usage:
+```json
+[
+  ["A B", [
+    "ADAM[ ]ADAM",
+    "TEST[  ]TEST"
+  ]]
+]
+```
 
-    python3 generuj.py --wpm 27 --fwpm 27 --freq 600
+---
 
-Łagodniejsza rampa:
+## 📜 Licencja
 
-    python3 generuj.py --wpm 27 --fwpm 27 --freq 550 --amp 0.6 --ramp 0.008
+MIT License  
+© 2026 Maniek SP8KM HAMHOBBY.PL
 
-Losowość włączona:
+---
 
-    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random true
+# 🇬🇧 English
 
-Bez losowości:
+## 📌 Description
 
-    python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random false
+This script generates a WAV file containing Morse code from a JSON input file.  
+It supports both random and deterministic playback.
 
-Pełna konfiguracja:
+Features:
+- full A–Z alphabet and digits 0–9
+- special characters (. , ? / - ( ))
+- dynamic spacing `[   ]`
+- smooth audio envelope (no clicks)
 
-    python3 generuj.py --json lesson1.json --out lesson1.wav \
-        --wpm 27 --fwpm 27 --freq 600 \
-        --x 7 --y 7 --z 31 --random true --amp 0.6 --ramp 0.008
+---
 
-Przykład separatorów:
-    "ADAM[ ]ADAM"    -> przerwa 1 * Y
-    "ADAM[  ]ADAM"   -> przerwa 2 * Y
-    "ADAM[   ]ADAM"  -> przerwa 3 * Y
+## ⚙️ Requirements
 
-Linux pipeline example:
+- Python 3.8+
+- no external dependencies
 
-    python3 generuj.py --wpm 25 --fwpm 25 --freq 550 --amp 0.6 --ramp 0.008 --random false && aplay cw_losowo.wav
+---
+
+## ▶️ Usage
+
+```bash
+python3 generuj.py --wpm 25 --fwpm 25 --freq 600
+```
+
+---
+
+## 📥 Parameters
+
+| Parameter | Description |
+|----------|-------------|
+| `--wpm` | informational only |
+| `--fwpm` | controls full CW timing |
+| `--freq` | tone frequency (Hz) |
+| `--x` | gap between header tokens |
+| `--y` | base gap for `[ ]` |
+| `--z` | final gap |
+| `--random` | enable shuffle |
+| `--amp` | amplitude (0–1) |
+| `--ramp` | envelope time |
+| `--start-silence` | silence at start |
+| `--end-silence` | silence at end |
+
+---
+
+## ⏱️ Timing
+
+```
+dit = 1.2 / FWPM
+```
+
+---
+
+## 🧩 `[   ]` Separator
+
+```
+[ ]   = 1 × Y
+[  ]  = 2 × Y
+[   ] = 3 × Y
+```
+
+---
+
+## 📄 Example JSON
+
+```json
+[
+  ["A B", [
+    "ADAM[ ]ADAM",
+    "TEST[  ]TEST"
+  ]]
+]
+```
+
+---
+
+## 📜 License
+
+MIT License  
+© 2026 Maniek SP8KM HAMHOBBY.PL
+
+---
+
+# 🇩🇪 Deutsch
+
+## 📌 Beschreibung
+
+Dieses Skript erzeugt eine WAV-Datei mit Morsecode aus einer JSON-Datei.  
+Es unterstützt sowohl zufällige als auch feste Reihenfolge.
+
+Funktionen:
+- Alphabet A–Z und Ziffern 0–9
+- Sonderzeichen (. , ? / - ( ))
+- dynamische Pausen `[   ]`
+- weiche Tonhüllkurve (kein Klicken)
+
+---
+
+## ⚙️ Anforderungen
+
+- Python 3.8+
+- keine externen Bibliotheken
+
+---
+
+## ▶️ Nutzung
+
+```bash
+python3 generuj.py --wpm 25 --fwpm 25 --freq 600
+```
+
+---
+
+## 📥 Parameter
+
+| Parameter | Beschreibung |
+|----------|--------------|
+| `--wpm` | nur informativ |
+| `--fwpm` | steuert das gesamte CW-Timing |
+| `--freq` | Tonfrequenz (Hz) |
+| `--x` | Pause zwischen Header-Token |
+| `--y` | Basisabstand für `[ ]` |
+| `--z` | Endpause |
+| `--random` | Zufallsmodus |
+| `--amp` | Amplitude (0–1) |
+| `--ramp` | Ein-/Ausblendzeit |
+| `--start-silence` | Stille am Anfang |
+| `--end-silence` | Stille am Ende |
+
+---
+
+## ⏱️ Timing
+
+```
+dit = 1.2 / FWPM
+```
+
+---
+
+## 🧩 `[   ]` Separator
+
+```
+[ ]   = 1 × Y
+[  ]  = 2 × Y
+[   ] = 3 × Y
+```
+
+---
+
+## 📄 Beispiel JSON
+
+```json
+[
+  ["A B", [
+    "ADAM[ ]ADAM",
+    "TEST[  ]TEST"
+  ]]
+]
+```
+
+---
+
+## 📜 Lizenz
+
+MIT License  
+© 2026 Maniek SP8KM HAMHOBBY.PL
