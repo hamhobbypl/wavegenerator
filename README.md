@@ -22,7 +22,7 @@ Obsługuje:
 
 ## ⚙️ Wymagania
 
-- Python 3.8+
+- Python 3.11
 - brak dodatkowych bibliotek
 
 ---
@@ -108,7 +108,7 @@ Features:
 
 ## ⚙️ Requirements
 
-- Python 3.8+
+- Python 3.11
 - no external dependencies
 
 ---
@@ -194,7 +194,7 @@ Funktionen:
 
 ## ⚙️ Anforderungen
 
-- Python 3.8+
+- Python 3.11
 - keine externen Bibliotheken
 
 ---
