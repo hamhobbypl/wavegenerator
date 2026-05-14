@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # MIT License
 #
@@ -32,7 +33,7 @@ import wave
 from array import array
 from pathlib import Path
 
-# --- Morse map (A-Z, 0-9 + kilka znaków opcjonalnych) ---
+# Morse map (A-Z, 0-9 and a few optional characters).
 MORSE = {
     "A": ".-",    "B": "-...",  "C": "-.-.",  "D": "-..",   "E": ".",
     "F": "..-.",  "G": "--.",   "H": "....",  "I": "..",    "J": ".---",
@@ -55,6 +56,7 @@ BANNER_A = r"""
 """
 
 SEPARATOR_RE = re.compile(r"\[(\s*)\]")
+LINE_SPEED_DROP_WPM = 4.0
 
 
 def print_banner_and_license() -> None:
@@ -64,7 +66,7 @@ def print_banner_and_license() -> None:
 
 
 class ProgressBar:
-    """Prosty progress bar w jednej linii (jak wget/curl)."""
+    """Simple one-line progress bar (wget/curl style)."""
     def __init__(self, total: int, label: str = "Generating", width: int = 30, interval_s: float = 0.12):
         self.total = max(1, int(total))
         self.label = label
@@ -105,16 +107,23 @@ class ProgressBar:
 
 
 def dit_time_from_speed(speed_wpm: float) -> float:
-    """Czas jednego ditu w sekundach, liczony z zadanej prędkości."""
+    """Duration of one dit in seconds, calculated from the given speed."""
     return 1.2 / speed_wpm
 
 
 def units_to_seconds(units: int, speed_wpm: float) -> float:
-    """Przelicza liczbę jednostek dit na sekundy."""
+    """Converts a number of dit units to seconds."""
     return units * dit_time_from_speed(speed_wpm)
 
 
-# -------- audio primitives --------
+def stepped_speed(base_speed: float, word_index: int, speed_down: bool) -> float:
+    """Returns the speed for the next word in a line."""
+    if not speed_down:
+        return base_speed
+    return base_speed - (word_index * LINE_SPEED_DROP_WPM)
+
+
+# Audio primitives.
 def gen_tone(
     sr: int,
     freq: float,
@@ -136,7 +145,7 @@ def gen_tone(
         t = i / sr
         x = math.sin(two_pi_f * t)
 
-        # cosine ramp
+        # Cosine envelope.
         if ramp > 0:
             if i < ramp:
                 w = 0.5 - 0.5 * math.cos(math.pi * i / ramp)
@@ -163,7 +172,7 @@ def add_samples(dst: array, src: array) -> None:
     dst.extend(src)
 
 
-# -------- CW encoder --------
+# CW encoder.
 def cw_emit_token(
     token: str,
     sr: int,
@@ -173,12 +182,12 @@ def cw_emit_token(
     ramp_s: float = 0.005
 ) -> array:
     """
-    Nadaje token (np. "ADAM" albo "A") jako ciąg znaków Morse'a.
-    Tutaj cały timing elementów liczony jest z FWPM:
-    - kropka = 1 dit
-    - kreska = 3 dit
-    - przerwa wewnątrz litery = 1 dit
-    - przerwa między literami = 3 dit
+    Emits a token (for example "ADAM" or "A") as Morse code.
+    All element timing is calculated from FWPM:
+    - dot = 1 dit
+    - dash = 3 dits
+    - intra-character gap = 1 dit
+    - character gap = 3 dits
     """
     dit = dit_time_from_speed(fwpm)
 
@@ -219,23 +228,23 @@ def cw_emit_token(
     return out
 
 
-# -------- parsing helpers --------
+# Parsing helpers.
 def parse_section_header(header: str) -> list[str]:
     return [t for t in header.strip().split() if t]
 
 
 def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[int]]:
     """
-    Rozbija linię na słowa oraz przerwy między nimi.
+    Splits a line into words and gaps between them.
 
-    Separator [  ] oznacza przerwę zależną od liczby spacji:
-        gap_units = liczba_spacji * Y
+    Separator [  ] means a gap based on the number of spaces:
+        gap_units = number_of_spaces * Y
 
-    Przykłady:
+    Examples:
         "ADAM[  ]ADAM"   -> words=["ADAM", "ADAM"], gaps=[2*Y]
         "A[   ]B[ ]C"    -> words=["A", "B", "C"], gaps=[3*Y, 1*Y]
 
-    Zwykłe białe znaki poza separatorem traktowane są jak separator 1*Y.
+    Plain whitespace outside the separator is treated as a 1*Y separator.
     """
     parts: list[tuple[str, int | None]] = []
     pos = 0
@@ -269,7 +278,7 @@ def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[in
                     words.append(subword)
                 else:
                     if pending_explicit_gap and i == 0:
-                        # przerwa została już dodana przez [ ... ]
+                        # The gap has already been added by [ ... ].
                         words.append(subword)
                     else:
                         gaps.append(y_units_per_space)
@@ -282,7 +291,7 @@ def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[in
             gaps.append(gap_units)
             pending_explicit_gap = True
 
-    # normalizacja: liczba gaps ma być o 1 mniejsza niż liczba words
+    # The number of gaps must be one less than the number of words.
     if len(gaps) > max(0, len(words) - 1):
         gaps = gaps[:len(words) - 1]
 
@@ -291,22 +300,31 @@ def parse_wordline(raw: str, y_units_per_space: int) -> tuple[list[str], list[in
 
 def estimate_total_steps(data) -> int:
     """
-    Liczymy 'kroki' tak, żeby postęp był stabilny:
-    - 1 krok na sekcję (start)
-    - 1 krok na token nagłówka
-    - 1 krok na linię (raw entry)
-    - 1 krok na każde słowo w linii
+    Steps are counted this way to keep progress stable:
+    - 1 step per section
+    - 1 step per header token
+    - 1 step per line
+    - 1 step per word
     """
     steps = 0
     for hdr, entries in data:
-        steps += 1  # sekcja
+        steps += 1  # section
         hdr_tokens = parse_section_header(hdr)
         steps += len(hdr_tokens)
-        steps += len(entries)  # linie
+        steps += len(entries)  # lines
         for raw in entries:
             words, _gaps = parse_wordline(raw, y_units_per_space=1)
             steps += len(words)
     return max(1, steps)
+
+
+def max_words_in_entries(data, y_units_per_space: int) -> int:
+    max_words = 0
+    for _hdr, entries in data:
+        for raw in entries:
+            words, _gaps = parse_wordline(raw, y_units_per_space=y_units_per_space)
+            max_words = max(max_words, len(words))
+    return max_words
 
 
 def _parse_bool(value: str) -> bool:
@@ -316,11 +334,11 @@ def _parse_bool(value: str) -> bool:
     if v in ("false", "0", "no", "n", "off"):
         return False
     raise argparse.ArgumentTypeError(
-        f"niepoprawna wartość logiczna: {value!r} (użyj true/false)"
+        f"invalid boolean value: {value!r} (use true/false)"
     )
 
 
-# -------- build one pass and render with X/Y/Z --------
+# Builds one pass and renders with X/Y/Z.
 def render_one_pass(
     json_path: Path,
     sr: int,
@@ -330,6 +348,7 @@ def render_one_pass(
     Y: int,
     Z: int,
     randomize: bool = True,
+    line_speed_down: bool = False,
     amp: float = 0.6,
     ramp_s: float = 0.005,
     start_silence: float = 0.8,
@@ -344,16 +363,16 @@ def render_one_pass(
 
     out = array('h')
 
-    # cisza na początku pliku
+    # Silence at the beginning of the file.
     add_samples(out, gen_silence(sr, start_silence))
 
-    # X/Y/Z liczone od FWPM
+    # X/Y/Z are calculated from FWPM.
     X_s = units_to_seconds(X, fwpm)
     Z_s = units_to_seconds(Z, fwpm)
 
     for hdr, entries in sections:
         if progress:
-            progress.step(1)  # sekcja
+            progress.step(1)  # section
 
         hdr_tokens = parse_section_header(hdr)
         for i, tok in enumerate(hdr_tokens):
@@ -373,7 +392,7 @@ def render_one_pass(
             else:
                 add_samples(out, gen_silence(sr, X_s))
             if progress:
-                progress.step(1)  # token nagłówka
+                progress.step(1)  # header token
 
         entries = list(entries)
         if randomize:
@@ -381,18 +400,19 @@ def render_one_pass(
 
         for raw in entries:
             if progress:
-                progress.step(1)  # linia
+                progress.step(1)  # line
 
             words, gaps_units = parse_wordline(raw, y_units_per_space=Y)
 
             for i, w in enumerate(words):
+                word_fwpm = stepped_speed(fwpm, i, line_speed_down)
                 add_samples(
                     out,
                     cw_emit_token(
                         w,
                         sr,
                         freq,
-                        fwpm,
+                        word_fwpm,
                         amp=amp,
                         ramp_s=ramp_s,
                     )
@@ -402,10 +422,10 @@ def render_one_pass(
                     add_samples(out, gen_silence(sr, Z_s))
                 else:
                     gap_units = gaps_units[i] if i < len(gaps_units) else Y
-                    add_samples(out, gen_silence(sr, units_to_seconds(gap_units, fwpm)))
+                    add_samples(out, gen_silence(sr, units_to_seconds(gap_units, word_fwpm)))
 
                 if progress:
-                    progress.step(1)  # słowo
+                    progress.step(1)  # word
 
     add_samples(out, gen_silence(sr, end_silence))
     return out
@@ -435,9 +455,9 @@ def _positive_float(value: str) -> float:
     try:
         f = float(value)
     except ValueError as e:
-        raise argparse.ArgumentTypeError(f"niepoprawna liczba: {value!r}") from e
+        raise argparse.ArgumentTypeError(f"invalid number: {value!r}") from e
     if f <= 0:
-        raise argparse.ArgumentTypeError("wartość musi być > 0")
+        raise argparse.ArgumentTypeError("value must be > 0")
     return f
 
 
@@ -445,9 +465,9 @@ def _nonneg_float(value: str) -> float:
     try:
         f = float(value)
     except ValueError as e:
-        raise argparse.ArgumentTypeError(f"niepoprawna liczba: {value!r}") from e
+        raise argparse.ArgumentTypeError(f"invalid number: {value!r}") from e
     if f < 0:
-        raise argparse.ArgumentTypeError("wartość musi być >= 0")
+        raise argparse.ArgumentTypeError("value must be >= 0")
     return f
 
 
@@ -455,9 +475,9 @@ def _nonneg_int(value: str) -> int:
     try:
         n = int(value)
     except ValueError as e:
-        raise argparse.ArgumentTypeError(f"niepoprawna liczba całkowita: {value!r}") from e
+        raise argparse.ArgumentTypeError(f"invalid integer: {value!r}") from e
     if n < 0:
-        raise argparse.ArgumentTypeError("wartość musi być >= 0")
+        raise argparse.ArgumentTypeError("value must be >= 0")
     return n
 
 
@@ -465,147 +485,139 @@ def build_arg_parser() -> argparse.ArgumentParser:
     description = """
 CW WAV generator from JSON file.
 
-Generator pliku WAV z kodem Morse'a na podstawie pliku JSON.
-Program może losować sekcje i wpisy albo generować dokładnie po kolei.
-Kropka, kreska i X/Y/Z są liczone od FWPM.
-Separator [   ] ma długość zależną od liczby spacji w środku.
+The program can shuffle sections and entries, or generate them in file order.
+Dots, dashes, and X/Y/Z gaps are calculated from FWPM.
+Separator [   ] has a length based on the number of spaces inside the brackets.
 """
 
     epilog = """
-PARAMETRY / PARAMETERS
-----------------------
+PARAMETERS
+----------
 
 --wpm
-    PL: parametr informacyjny / kompatybilnościowy
-    EN: informational / compatibility parameter
+    Informational / compatibility parameter.
 
 --fwpm
-    PL: prędkość, od której liczony jest cały timing CW
-        (kropka, kreska, przerwy oraz X/Y/Z)
-    EN: speed used for the entire CW timing
-        (dot, dash, gaps, and X/Y/Z)
+    Speed used for the entire CW timing
+    (dot, dash, gaps, and X/Y/Z).
 
 --freq
-    PL: częstotliwość tonu CW w Hz
-    EN: CW tone frequency in Hz
+    CW tone frequency in Hz.
 
 --sr
-    PL: częstotliwość próbkowania WAV, domyślne 44100Hz
-    EN: WAV sample rate, default 44100Hz
+    WAV sample rate, default 44100Hz.
 
 --x
-    PL: przerwa między tokenami nagłówka w jednostkach dit, domyślne 7
-    EN: pause between header tokens in dit units, default 7
+    Pause between header tokens in dit units, default 7.
 
 --y
-    PL: bazowa przerwa na jedną spację w separatorze [ ]
-        domyślnie 7
-        np.:
-            [ ]   = 1 * Y
-            [  ]  = 2 * Y
-            [   ] = 3 * Y
-    EN: base pause per one space inside [ ], default 7
+    Base pause per one space inside [ ], default 7.
+    Examples:
+        [ ]   = 1 * Y
+        [  ]  = 2 * Y
+        [   ] = 3 * Y
 
 --z
-    PL: przerwa po ostatnim tokenie nagłówka oraz po ostatnim słowie w linii
-        w jednostkach dit, domyślne 31
-    EN: pause after the last header token and after the last word in a line
-        in dit units, default 31
+    Pause after the last header token and after the last word in a line,
+    in dit units, default 31.
 
 --random
-    PL: włącza lub wyłącza losowanie sekcji i wpisów
-        true  = losowo
-        false = po kolei z pliku JSON
-    EN: enables or disables shuffling of sections and entries
+    Enables or disables shuffling of sections and entries.
         true  = random
         false = in file order
 
+--line-speed-down
+    Decreases the speed of consecutive words in each line by 4 for WPM and FWPM.
+    Header tokens still use the base --fwpm speed.
+    Example for --wpm 31 --fwpm 31:
+        "ZAP[   ]ZAP[   ]ZAP" -> 31/31, 27/27, 23/23 WPM/FWPM
+
 --amp
-    PL: amplituda tonu (0..1), domyślnie 0.6
-    EN: tone amplitude (0..1), default 0.6
+    Tone amplitude (0..1), default 0.6.
 
 --ramp
-    PL: czas narastania/opadania obwiedni tonu [s], domyślnie 0.005
-    EN: rise/fall envelope time [s], default 0.005
+    Rise/fall envelope time [s], default 0.005.
 
 --start-silence
-    PL: cisza na początku pliku [s], domyślnie 0.8s
-    EN: silence prepended at beginning of file [s], default 0.8s
+    Silence prepended at beginning of file [s], default 0.8s.
 
 --end-silence
-    PL: cisza na końcu pliku [s], domyślne 0.8s
-    EN: silence appended at end of file [s], default 0.8s
+    Silence appended at end of file [s], default 0.8s.
 
 
-UWAGI / NOTES
--------------
+NOTES
+-----
 
-1 jednostka = 1 dit = 1.2 / FWPM sekundy
+1 unit = 1 dit = 1.2 / FWPM seconds
 
-Przykład dla FWPM=12:
+Example for FWPM=12:
     1 dit = 0.100000 s
 
-Układ przerw:
-    - w nagłówku: tokeny rozdzielane są X, a po ostatnim tokenie jest Z
-    - w linii:
-        separator [ ]   daje 1 * Y
-        separator [  ]  daje 2 * Y
-        separator [   ] daje 3 * Y
-      a po ostatnim słowie jest Z
+Gap layout:
+    - in the header: tokens are separated by X, and the last token is followed by Z
+    - in a line:
+        separator [ ]   gives 1 * Y
+        separator [  ]  gives 2 * Y
+        separator [   ] gives 3 * Y
+      the last word is followed by Z
 
-Separator słów w JSON:
-    Skrypt obsługuje znaczniki:
+Word separators in JSON:
+    The script supports markers:
         [ ]
         [  ]
         [   ]
-    oraz inne warianty z dowolną liczbą spacji w środku nawiasów.
+    and other variants with any number of spaces inside the brackets.
 
-Uwaga:
-    W tej wersji WPM nie steruje już timingiem elementów.
-    Cały timing jest liczony od FWPM.
+Note:
+    In this version, WPM no longer controls element timing.
+    All timing is calculated from FWPM.
 
 Ramp / envelope:
-    --ramp steruje łagodnym wejściem i zejściem tonu.
-    Typowe wartości:
-        0.003  = szybszy atak
+    --ramp controls smooth tone fade-in and fade-out.
+    Typical values:
+        0.003  = faster attack
         0.005  = standard
-        0.008  = łagodniejszy atak
-        0.010  = bardzo miękki atak
+        0.008  = softer attack
+        0.010  = very soft attack
 
-PRZYKŁADY / EXAMPLES
---------------------
+EXAMPLES
+--------
 
-Minimalne użycie / minimal usage:
+Minimal usage:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600
 
-Łagodniejsza rampa:
+Softer ramp:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 550 --amp 0.6 --ramp 0.008
 
-Losowość włączona:
+Randomness enabled:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random true
 
-Bez losowości:
+No randomness:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --random false
 
-Z ciszą na początku i końcu:
+Decreasing speed for consecutive words in a line:
+
+    python3 generuj.py --wpm 31 --fwpm 31 --freq 600 --line-speed-down
+
+With silence at the beginning and end:
 
     python3 generuj.py --wpm 27 --fwpm 27 --freq 600 --start-silence 0.8 --end-silence 0.8
 
-Pełna konfiguracja:
+Full configuration:
 
     python3 generuj.py --json lesson1.json --out lesson1.wav \
         --wpm 27 --fwpm 27 --freq 600 \
         --x 7 --y 7 --z 31 --random true --amp 0.6 --ramp 0.008 \
         --start-silence 0.8 --end-silence 0.8
 
-Przykład separatorów:
-    "ADAM[ ]ADAM"    -> przerwa 1 * Y
-    "ADAM[  ]ADAM"   -> przerwa 2 * Y
-    "ADAM[   ]ADAM"  -> przerwa 3 * Y
+Separator examples:
+    "ADAM[ ]ADAM"    -> gap 1 * Y
+    "ADAM[  ]ADAM"   -> gap 2 * Y
+    "ADAM[   ]ADAM"  -> gap 3 * Y
 
 Linux pipeline example:
 
@@ -620,47 +632,50 @@ Linux pipeline example:
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
-    p.add_argument("-j", "--json", default="plik.json",
-                   help="ścieżka do pliku JSON")
+    p.add_argument("-j", "--json", default="input.json",
+                   help="path to JSON file")
 
     p.add_argument("-o", "--out", default="cw_losowo.wav",
-                   help="plik wynikowy WAV")
+                   help="output WAV file")
 
     p.add_argument("--wpm", type=_positive_float, required=True,
-                   help="parametr informacyjny/kompatybilnościowy")
+                   help="informational / compatibility parameter")
 
     p.add_argument("--fwpm", type=_positive_float, required=True,
-                   help="prędkość używana do całego timingu CW")
+                   help="speed used for the entire CW timing")
 
     p.add_argument("--freq", type=_positive_float, required=True,
-                   help="częstotliwość tonu [Hz]")
+                   help="tone frequency [Hz]")
 
     p.add_argument("--sr", type=int, default=44100,
                    help="sample rate WAV")
 
     p.add_argument("--x", type=_nonneg_int, default=7,
-                   help="przerwa między tokenami nagłówka [dit units]")
+                   help="pause between header tokens [dit units]")
 
     p.add_argument("--y", type=_nonneg_int, default=7,
-                   help="bazowa przerwa na jedną spację w separatorze [ ] [dit units]")
+                   help="base pause per one space inside [ ] [dit units]")
 
     p.add_argument("--z", type=_nonneg_int, default=31,
-                   help="przerwa po ostatnim tokenie nagłówka i po ostatnim słowie w linii [dit units]")
+                   help="pause after the last header token and after the last word in a line [dit units]")
 
     p.add_argument("--random", type=_parse_bool, default=True,
-                   help="losowość: true = włączona, false = wyłączona")
+                   help="randomness: true = enabled, false = disabled")
+
+    p.add_argument("--line-speed-down", action="store_true",
+                   help="decrease consecutive words in each line by 4 for WPM and FWPM; headers unchanged")
 
     p.add_argument("--amp", type=_nonneg_float, default=0.6,
-                   help="amplituda tonu")
+                   help="tone amplitude")
 
     p.add_argument("--ramp", type=_nonneg_float, default=0.005,
-                   help="czas narastania/opadania tonu [s]")
+                   help="tone rise/fall time [s]")
 
     p.add_argument("--start-silence", type=_nonneg_float, default=0.8,
-                   help="cisza na początku pliku")
+                   help="silence at the beginning of the file")
 
     p.add_argument("--end-silence", type=_nonneg_float, default=0.8,
-                   help="cisza na końcu pliku")
+                   help="silence at the end of the file")
 
     return p
 
@@ -673,16 +688,27 @@ def main(argv: list[str] | None = None) -> int:
 
     json_path = Path(args.json)
     if not json_path.exists():
-        parser.error(f"Nie znaleziono pliku JSON: {json_path.resolve()}")
+        parser.error(f"JSON file not found: {json_path.resolve()}")
 
     if args.sr <= 0:
-        parser.error("--sr musi być > 0")
+        parser.error("--sr must be > 0")
     if args.amp > 1.0:
-        parser.error("--amp musi być w zakresie 0..1")
+        parser.error("--amp must be in range 0..1")
 
     out_path = Path(args.out)
 
     data_for_steps = json.loads(json_path.read_text(encoding="utf-8"))
+    if args.line_speed_down:
+        max_words = max_words_in_entries(data_for_steps, y_units_per_space=args.y)
+        min_line_wpm = stepped_speed(args.wpm, max(0, max_words - 1), True)
+        min_line_fwpm = stepped_speed(args.fwpm, max(0, max_words - 1), True)
+        if min_line_wpm <= 0 or min_line_fwpm <= 0:
+            parser.error(
+                "--line-speed-down decreases WPM or FWPM to zero or below; "
+                f"the longest line has {max_words} words, "
+                f"starting --wpm is {args.wpm:g}, and starting --fwpm is {args.fwpm:g}"
+            )
+
     total_steps = estimate_total_steps(data_for_steps)
 
     progress = ProgressBar(total_steps, label="Generating WAVE", width=30, interval_s=0.12)
@@ -696,6 +722,7 @@ def main(argv: list[str] | None = None) -> int:
         Y=args.y,
         Z=args.z,
         randomize=args.random,
+        line_speed_down=args.line_speed_down,
         amp=args.amp,
         ramp_s=args.ramp,
         start_silence=args.start_silence,
@@ -704,12 +731,15 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     write_wav_mono16(out_path, samples, args.sr, progress=progress)
-    progress.finish("OK: zapisano plik WAV.")
+    progress.finish("OK: WAV file saved.")
 
-    print(f"Plik: {out_path.resolve()}")
+    print(f"File: {out_path.resolve()}")
     print(f"samples={len(samples)}, sr={args.sr}")
-    print(f"WPM={args.wpm} (informacyjnie)")
-    print(f"FWPM={args.fwpm} (steruje całym timingiem)")
+    print(f"WPM={args.wpm} (informational)")
+    print(f"FWPM={args.fwpm} (controls all timing)")
+    print(f"Line speed down={'ON' if args.line_speed_down else 'OFF'}")
+    if args.line_speed_down:
+        print(f"Line speed step={LINE_SPEED_DROP_WPM:g} for WPM and FWPM per next word")
     print(f"Random={'ON' if args.random else 'OFF'}")
     print(f"freq={args.freq:.2f} Hz")
     print(f"amp={args.amp:.3f}")
@@ -718,9 +748,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"end_silence={args.end_silence:.6f}s")
     print(f"dit={dit_time_from_speed(args.fwpm):.6f}s")
     print(f"X={args.x} dit -> {units_to_seconds(args.x, args.fwpm):.6f}s")
-    print(f"Y={args.y} dit na 1 spację w separatorze [ ] -> {units_to_seconds(args.y, args.fwpm):.6f}s")
+    print(f"Y={args.y} dit per 1 space inside [ ] -> {units_to_seconds(args.y, args.fwpm):.6f}s")
     print(f"Z={args.z} dit -> {units_to_seconds(args.z, args.fwpm):.6f}s")
-    print("Przykład: [  ] = 2 * Y")
+    print("Example: [  ] = 2 * Y")
     return 0
 
 
